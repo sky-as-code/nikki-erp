@@ -97,6 +97,18 @@
 		"core.basemodel.versioned_model"
 	],
 
+	"edges_to": [
+		{
+			"edge": "promotions",
+			"label": { "en-US": "Promotions" },
+			"type": "many:many",
+			"peer_schema": "sales_promotion",
+			"through_schema": "sales_promotion_channel",
+			"src_field_prefix": "sales_channel",
+			"on_delete": "NO ACTION"
+		}
+	],
+
 	"edges_from": [
 		{
 			"edge": "sales_points",

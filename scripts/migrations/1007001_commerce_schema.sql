@@ -1442,7 +1442,10 @@ CREATE TABLE "sales_order_lines" (
   "tax_amount" numeric NULL,
   "final_amount" numeric NULL,
   "pricing_source" character varying NULL,
-  "source_promotion_program_id" character varying NULL,
+  "source_promotion_id" character varying NULL,
+  "source_promotion_reward_id" character varying NULL,
+  "promotion_application_id" character varying NULL,
+  "pricelist_id" character varying NULL,
   "sales_combo_id" character varying NULL,
   "is_archived" boolean NULL,
   "created_at" timestamptz NULL,
@@ -1456,6 +1459,38 @@ CREATE TABLE "sales_order_lines" (
 CREATE INDEX "sales_order_lines_tid_uom_idx" ON "sales_order_lines" ("uom_id");
 -- Create index "sales_order_lines_tid_variant_idx" to table: "sales_order_lines"
 CREATE INDEX "sales_order_lines_tid_variant_idx" ON "sales_order_lines" ("product_variant_id");
+-- Create "sales_order_promotion_selections" table
+CREATE TABLE "sales_order_promotion_selections" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "order_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "reward_id" character varying NULL,
+  "decision" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_ord_promo_sels_tid_order_promo_ukey" UNIQUE ("order_id", "promotion_id")
+);
+-- Create "sales_order_vouchers" table
+CREATE TABLE "sales_order_vouchers" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "order_id" character varying NULL,
+  "voucher_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "attached_at" timestamptz NULL,
+  "attached_by" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_ord_vouchers_tid_order_promo_ukey" UNIQUE ("order_id", "promotion_id")
+);
+-- Create index "sls_ord_vouchers_tid_voucher_idx" to table: "sales_order_vouchers"
+CREATE INDEX "sls_ord_vouchers_tid_voucher_idx" ON "sales_order_vouchers" ("voucher_id");
 -- Create "sales_orders" table
 CREATE TABLE "sales_orders" (
   "id" character varying NOT NULL,
@@ -1488,6 +1523,8 @@ CREATE TABLE "sales_orders" (
   "external_reference" character varying NULL,
   "idempotency_key" character varying NULL,
   "stage_version" integer NULL,
+  "promotion_calculation_reference" character varying NULL,
+  "confirmation_revision" integer NULL,
   "initial_bill_id" character varying NULL,
   "confirmed_at" timestamptz NULL,
   "completed_at" timestamptz NULL,
@@ -1665,121 +1702,220 @@ CREATE INDEX "sales_pricelists_tid_channel_idx" ON "sales_pricelists" ("sales_ch
 CREATE INDEX "sales_pricelists_tid_point_idx" ON "sales_pricelists" ("sales_point_id");
 -- Create index "sales_pricelists_tid_validity_idx" to table: "sales_pricelists"
 CREATE INDEX "sales_pricelists_tid_validity_idx" ON "sales_pricelists" ("valid_from", "valid_until");
--- Create "sales_promotion_compatibilities" table
-CREATE TABLE "sales_promotion_compatibilities" (
+-- Create "sales_promotion_allocations" table
+CREATE TABLE "sales_promotion_allocations" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
-  "program_a_id" character varying NULL,
-  "program_b_id" character varying NULL,
-  "compatibility" character varying NULL,
+  "application_id" character varying NULL,
+  "order_line_id" character varying NULL,
+  "allocation_type" character varying NULL,
+  "eligible_quantity" numeric NULL,
+  "uom_id" character varying NULL,
+  "base_untaxed_amount" numeric NULL,
+  "discount_untaxed_amount" numeric NULL,
+  "tax_reduction_amount" numeric NULL,
+  "discount_total_amount" numeric NULL,
+  "calculation_sequence" integer NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+  PRIMARY KEY ("id")
 );
--- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
-CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
--- Create "sales_promotion_condition_groups" table
-CREATE TABLE "sales_promotion_condition_groups" (
+-- Create index "sls_promo_allocs_tid_app_idx" to table: "sales_promotion_allocations"
+CREATE INDEX "sls_promo_allocs_tid_app_idx" ON "sales_promotion_allocations" ("application_id");
+-- Create index "sls_promo_allocs_tid_line_idx" to table: "sales_promotion_allocations"
+CREATE INDEX "sls_promo_allocs_tid_line_idx" ON "sales_promotion_allocations" ("order_line_id");
+-- Create "sales_promotion_applications" table
+CREATE TABLE "sales_promotion_applications" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
-  "sales_promotion_program_id" character varying NULL,
-  "sequence" integer NULL,
+  "order_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "reward_id" character varying NULL,
+  "voucher_id" character varying NULL,
+  "status" character varying NULL,
+  "is_confirmed" boolean NULL,
+  "confirmation_revision" integer NULL,
+  "config_version" integer NULL,
+  "qualification_snapshot" jsonb NULL,
+  "reward_snapshot" jsonb NULL,
+  "discount_untaxed_amount" numeric NULL,
+  "tax_reduction_amount" numeric NULL,
+  "discount_total_amount" numeric NULL,
+  "applied_at" timestamptz NULL,
+  "reversed_at" timestamptz NULL,
+  "reversal_reason" character varying NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_cgroups_tid_prog_seq_ukey" UNIQUE ("sales_promotion_program_id", "sequence")
+  PRIMARY KEY ("id")
 );
--- Create "sales_promotion_condition_targets" table
-CREATE TABLE "sales_promotion_condition_targets" (
+-- Create index "sls_promo_apps_tid_order_idx" to table: "sales_promotion_applications"
+CREATE INDEX "sls_promo_apps_tid_order_idx" ON "sales_promotion_applications" ("order_id");
+-- Create index "sls_promo_apps_tid_order_promo_cfm_ukey" to table: "sales_promotion_applications"
+CREATE UNIQUE INDEX "sls_promo_apps_tid_order_promo_cfm_ukey" ON "sales_promotion_applications" ("order_id", "promotion_id", "is_confirmed") WHERE (is_confirmed IS NOT NULL);
+-- Create index "sls_promo_apps_tid_promo_status_idx" to table: "sales_promotion_applications"
+CREATE INDEX "sls_promo_apps_tid_promo_status_idx" ON "sales_promotion_applications" ("promotion_id", "status");
+-- Create index "sls_promo_apps_tid_voucher_idx" to table: "sales_promotion_applications"
+CREATE INDEX "sls_promo_apps_tid_voucher_idx" ON "sales_promotion_applications" ("voucher_id");
+-- Create "sales_promotion_channels" table
+CREATE TABLE "sales_promotion_channels" (
+  "id" character varying NOT NULL,
+  "promotion_id" character varying NULL,
+  "sales_channel_id" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_promo_chan_tid_promo_chan_ukey" UNIQUE ("promotion_id", "sales_channel_id")
+);
+-- Create index "sls_promo_chan_tid_chan_idx" to table: "sales_promotion_channels"
+CREATE INDEX "sls_promo_chan_tid_chan_idx" ON "sales_promotion_channels" ("sales_channel_id");
+-- Create "sales_promotion_points" table
+CREATE TABLE "sales_promotion_points" (
+  "id" character varying NOT NULL,
+  "promotion_id" character varying NULL,
+  "sales_point_id" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_promo_pt_tid_promo_pt_ukey" UNIQUE ("promotion_id", "sales_point_id")
+);
+-- Create index "sls_promo_pt_tid_pt_idx" to table: "sales_promotion_points"
+CREATE INDEX "sls_promo_pt_tid_pt_idx" ON "sales_promotion_points" ("sales_point_id");
+-- Create "sales_promotion_pricelists" table
+CREATE TABLE "sales_promotion_pricelists" (
+  "id" character varying NOT NULL,
+  "promotion_id" character varying NULL,
+  "sales_pricelist_id" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_promo_pl_tid_promo_pl_ukey" UNIQUE ("promotion_id", "sales_pricelist_id")
+);
+-- Create index "sls_promo_pl_tid_pl_idx" to table: "sales_promotion_pricelists"
+CREATE INDEX "sls_promo_pl_tid_pl_idx" ON "sales_promotion_pricelists" ("sales_pricelist_id");
+-- Create "sales_promotion_reward_categories" table
+CREATE TABLE "sales_promotion_reward_categories" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
-  "condition_id" character varying NULL,
-  "target_type" character varying NULL,
-  "target_id" character varying NULL,
+  "reward_id" character varying NULL,
+  "category_id" character varying NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_ctargets_tid_cond_target_ukey" UNIQUE ("condition_id", "target_type", "target_id")
+  CONSTRAINT "sls_promo_rwd_cats_tid_rwd_cat_ukey" UNIQUE ("reward_id", "category_id")
 );
--- Create index "sales_promo_ctargets_tid_target_idx" to table: "sales_promotion_condition_targets"
-CREATE INDEX "sales_promo_ctargets_tid_target_idx" ON "sales_promotion_condition_targets" ("target_type", "target_id");
--- Create "sales_promotion_conditions" table
-CREATE TABLE "sales_promotion_conditions" (
+-- Create index "sls_promo_rwd_cats_tid_cat_idx" to table: "sales_promotion_reward_categories"
+CREATE INDEX "sls_promo_rwd_cats_tid_cat_idx" ON "sales_promotion_reward_categories" ("category_id");
+-- Create "sales_promotion_reward_products" table
+CREATE TABLE "sales_promotion_reward_products" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
-  "group_id" character varying NULL,
-  "condition_type" character varying NULL,
-  "operator" character varying NULL,
-  "value_text" character varying NULL,
-  "value_decimal" numeric NULL,
-  "value_from" numeric NULL,
-  "value_to" numeric NULL,
+  "reward_id" character varying NULL,
+  "product_template_id" character varying NULL,
+  "product_variant_id" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sls_promo_rwd_prods_tid_rwd_tpl_ukey" to table: "sales_promotion_reward_products"
+CREATE UNIQUE INDEX "sls_promo_rwd_prods_tid_rwd_tpl_ukey" ON "sales_promotion_reward_products" ("reward_id", "product_template_id") WHERE (product_template_id IS NOT NULL);
+-- Create index "sls_promo_rwd_prods_tid_rwd_var_ukey" to table: "sales_promotion_reward_products"
+CREATE UNIQUE INDEX "sls_promo_rwd_prods_tid_rwd_var_ukey" ON "sales_promotion_reward_products" ("reward_id", "product_variant_id") WHERE (product_variant_id IS NOT NULL);
+-- Create "sales_promotion_rewards" table
+CREATE TABLE "sales_promotion_rewards" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "reward_type" character varying NULL,
+  "order_description" character varying NULL,
+  "discount_method" character varying NULL,
+  "discount_value" numeric NULL,
+  "discount_scope" character varying NULL,
+  "max_discount_amount" numeric NULL,
+  "gift_product_variant_id" character varying NULL,
+  "gift_quantity" numeric NULL,
+  "gift_uom_id" character varying NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id")
 );
--- Create index "sales_promo_conds_tid_group_idx" to table: "sales_promotion_conditions"
-CREATE INDEX "sales_promo_conds_tid_group_idx" ON "sales_promotion_conditions" ("group_id");
--- Create index "sales_promo_conds_tid_type_idx" to table: "sales_promotion_conditions"
-CREATE INDEX "sales_promo_conds_tid_type_idx" ON "sales_promotion_conditions" ("condition_type");
--- Create "sales_promotion_programs" table
-CREATE TABLE "sales_promotion_programs" (
+-- Create index "sls_promo_rewards_tid_promo_idx" to table: "sales_promotion_rewards"
+CREATE INDEX "sls_promo_rewards_tid_promo_idx" ON "sales_promotion_rewards" ("promotion_id");
+-- Create "sales_promotion_rule_categories" table
+CREATE TABLE "sales_promotion_rule_categories" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
-  "code" character varying NULL,
+  "rule_id" character varying NULL,
+  "category_id" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_promo_rule_cats_tid_rule_cat_ukey" UNIQUE ("rule_id", "category_id")
+);
+-- Create index "sls_promo_rule_cats_tid_cat_idx" to table: "sales_promotion_rule_categories"
+CREATE INDEX "sls_promo_rule_cats_tid_cat_idx" ON "sales_promotion_rule_categories" ("category_id");
+-- Create "sales_promotion_rule_products" table
+CREATE TABLE "sales_promotion_rule_products" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "rule_id" character varying NULL,
+  "product_template_id" character varying NULL,
+  "product_variant_id" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sls_promo_rule_prods_tid_rule_tpl_ukey" to table: "sales_promotion_rule_products"
+CREATE UNIQUE INDEX "sls_promo_rule_prods_tid_rule_tpl_ukey" ON "sales_promotion_rule_products" ("rule_id", "product_template_id") WHERE (product_template_id IS NOT NULL);
+-- Create index "sls_promo_rule_prods_tid_rule_var_ukey" to table: "sales_promotion_rule_products"
+CREATE UNIQUE INDEX "sls_promo_rule_prods_tid_rule_var_ukey" ON "sales_promotion_rule_products" ("rule_id", "product_variant_id") WHERE (product_variant_id IS NOT NULL);
+-- Create "sales_promotion_rules" table
+CREATE TABLE "sales_promotion_rules" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "phase" character varying NULL,
   "name" character varying NULL,
-  "activation_type" character varying NULL,
-  "priority" integer NULL,
-  "valid_from" timestamptz NULL,
-  "valid_until" timestamptz NULL,
-  "stack_policy" character varying NULL,
-  "exclusive_group" character varying NULL,
+  "min_quantity" numeric NULL,
+  "qualification_uom_id" character varying NULL,
+  "min_amount" numeric NULL,
+  "amount_tax_basis" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sls_promo_rules_tid_promo_phase_idx" to table: "sales_promotion_rules"
+CREATE INDEX "sls_promo_rules_tid_promo_phase_idx" ON "sales_promotion_rules" ("promotion_id", "phase");
+-- Create "sales_promotions" table
+CREATE TABLE "sales_promotions" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "reference" character varying NULL,
+  "name" character varying NULL,
+  "description" character varying NULL,
+  "program_type" character varying NULL,
+  "status" character varying NULL,
+  "currency_id" character varying NULL,
+  "starts_at" timestamptz NULL,
+  "ends_at" timestamptz NULL,
   "usage_limit" integer NULL,
-  "usage_limit_per_customer" integer NULL,
-  "return_behavior" character varying NULL,
-  "restore_on_full_return" boolean NULL,
-  "restore_on_partial_return" boolean NULL,
+  "used_count" integer NULL,
+  "sequence" integer NULL,
+  "next_voucher_validity_days" integer NULL,
+  "config_version" integer NULL,
   "is_archived" boolean NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promotion_programs_code_ukey" UNIQUE ("code")
+  CONSTRAINT "sls_promos_tid_org_ref_ukey" UNIQUE ("org_id", "reference")
 );
--- Create index "sales_promo_progs_tid_activation_idx" to table: "sales_promotion_programs"
-CREATE INDEX "sales_promo_progs_tid_activation_idx" ON "sales_promotion_programs" ("activation_type");
--- Create index "sales_promo_progs_tid_excl_group_idx" to table: "sales_promotion_programs"
-CREATE INDEX "sales_promo_progs_tid_excl_group_idx" ON "sales_promotion_programs" ("exclusive_group");
--- Create index "sales_promo_progs_tid_priority_idx" to table: "sales_promotion_programs"
-CREATE INDEX "sales_promo_progs_tid_priority_idx" ON "sales_promotion_programs" ("priority");
--- Create index "sales_promo_progs_tid_validity_idx" to table: "sales_promotion_programs"
-CREATE INDEX "sales_promo_progs_tid_validity_idx" ON "sales_promotion_programs" ("valid_from", "valid_until");
--- Create "sales_promotion_rewards" table
-CREATE TABLE "sales_promotion_rewards" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "sales_promotion_program_id" character varying NULL,
-  "sequence" integer NULL,
-  "reward_type" character varying NULL,
-  "value" numeric NULL,
-  "target_scope" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_rewards_tid_prog_seq_ukey" UNIQUE ("sales_promotion_program_id", "sequence")
-);
+-- Create index "sls_promos_tid_org_status_window_idx" to table: "sales_promotions"
+CREATE INDEX "sls_promos_tid_org_status_window_idx" ON "sales_promotions" ("org_id", "status", "is_archived", "starts_at", "ends_at");
 -- Create "sales_quotation_lines" table
 CREATE TABLE "sales_quotation_lines" (
   "id" character varying NOT NULL,
@@ -1915,55 +2051,55 @@ CREATE INDEX "sales_returns_tid_fiscal_idx" ON "sales_returns" ("fiscal_adjustme
 CREATE INDEX "sales_returns_tid_order_idx" ON "sales_returns" ("sales_order_id");
 -- Create index "sales_returns_tid_status_idx" to table: "sales_returns"
 CREATE INDEX "sales_returns_tid_status_idx" ON "sales_returns" ("status");
--- Create "sales_voucher_codes" table
-CREATE TABLE "sales_voucher_codes" (
+-- Create "sales_voucher_issuances" table
+CREATE TABLE "sales_voucher_issuances" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
+  "source_order_id" character varying NULL,
+  "promotion_id" character varying NULL,
+  "voucher_id" character varying NULL,
+  "issue_rule_snapshot" jsonb NULL,
+  "issued_at" timestamptz NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sls_vchr_issues_tid_src_promo_ukey" UNIQUE ("source_order_id", "promotion_id")
+);
+-- Create index "sls_vchr_issues_tid_voucher_idx" to table: "sales_voucher_issuances"
+CREATE INDEX "sls_vchr_issues_tid_voucher_idx" ON "sales_voucher_issuances" ("voucher_id");
+-- Create "sales_vouchers" table
+CREATE TABLE "sales_vouchers" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "promotion_id" character varying NULL,
   "code" character varying NULL,
-  "sales_promotion_program_id" character varying NULL,
-  "valid_from" timestamptz NULL,
-  "valid_until" timestamptz NULL,
-  "usage_limit" integer NULL,
-  "usage_count" integer NULL,
+  "normalized_code" character varying NULL,
+  "voucher_type" character varying NULL,
   "status" character varying NULL,
+  "customer_id" character varying NULL,
+  "valid_from" timestamptz NULL,
+  "expires_at" timestamptz NULL,
+  "usage_limit" integer NULL,
+  "used_count" integer NULL,
+  "source_order_id" character varying NULL,
+  "issued_at" timestamptz NULL,
+  "revoked_at" timestamptz NULL,
+  "revoked_by" character varying NULL,
+  "revocation_reason" character varying NULL,
+  "revocation_note" character varying NULL,
   "is_archived" boolean NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_voucher_codes_code_ukey" UNIQUE ("code")
+  CONSTRAINT "sls_vouchers_tid_org_ncode_ukey" UNIQUE ("org_id", "normalized_code")
 );
--- Create index "sales_vouchers_tid_program_idx" to table: "sales_voucher_codes"
-CREATE INDEX "sales_vouchers_tid_program_idx" ON "sales_voucher_codes" ("sales_promotion_program_id");
--- Create index "sales_vouchers_tid_status_idx" to table: "sales_voucher_codes"
-CREATE INDEX "sales_vouchers_tid_status_idx" ON "sales_voucher_codes" ("status");
--- Create index "sales_vouchers_tid_validity_idx" to table: "sales_voucher_codes"
-CREATE INDEX "sales_vouchers_tid_validity_idx" ON "sales_voucher_codes" ("valid_from", "valid_until");
--- Create "sales_voucher_redemptions" table
-CREATE TABLE "sales_voucher_redemptions" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "voucher_code_id" character varying NULL,
-  "sales_order_id" character varying NULL,
-  "status" character varying NULL,
-  "reserved_at" timestamptz NULL,
-  "redeemed_at" timestamptz NULL,
-  "released_at" timestamptz NULL,
-  "reversed_at" timestamptz NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_vouch_redms_tid_voucher_order_ukey" UNIQUE ("voucher_code_id", "sales_order_id")
-);
--- Create index "sales_vouch_redms_tid_order_idx" to table: "sales_voucher_redemptions"
-CREATE INDEX "sales_vouch_redms_tid_order_idx" ON "sales_voucher_redemptions" ("sales_order_id");
--- Create index "sales_vouch_redms_tid_status_idx" to table: "sales_voucher_redemptions"
-CREATE INDEX "sales_vouch_redms_tid_status_idx" ON "sales_voucher_redemptions" ("status");
--- Create index "sales_vouch_redms_tid_voucher_idx" to table: "sales_voucher_redemptions"
-CREATE INDEX "sales_vouch_redms_tid_voucher_idx" ON "sales_voucher_redemptions" ("voucher_code_id");
+-- Create index "sls_vouchers_tid_promo_idx" to table: "sales_vouchers"
+CREATE INDEX "sls_vouchers_tid_promo_idx" ON "sales_vouchers" ("promotion_id");
+-- Create index "sls_vouchers_tid_src_order_idx" to table: "sales_vouchers"
+CREATE INDEX "sls_vouchers_tid_src_order_idx" ON "sales_vouchers" ("source_order_id");
 -- Modify "inventory_locations" table
 ALTER TABLE "inventory_locations" ADD CONSTRAINT "inventory_locations_storage_category_id_fkey" FOREIGN KEY ("storage_category_id") REFERENCES "inventory_storage_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_locations_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "inventory_product_attribute_values" table
@@ -2048,6 +2184,10 @@ ALTER TABLE "sales_order_line_allocations" ADD CONSTRAINT "sales_order_line_allo
 ALTER TABLE "sales_order_line_components" ADD CONSTRAINT "sales_order_line_components_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_order_line_components_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_order_line_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "sales_order_lines" table
 ALTER TABLE "sales_order_lines" ADD CONSTRAINT "sales_order_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_order_lines_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
+-- Modify "sales_order_promotion_selections" table
+ALTER TABLE "sales_order_promotion_selections" ADD CONSTRAINT "sales_order_promotion_selections_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_order_promotion_selections_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_order_promotion_selections_reward_id_fkey" FOREIGN KEY ("reward_id") REFERENCES "sales_promotion_rewards" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
+-- Modify "sales_order_vouchers" table
+ALTER TABLE "sales_order_vouchers" ADD CONSTRAINT "sales_order_vouchers_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_order_vouchers_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_order_vouchers_voucher_id_fkey" FOREIGN KEY ("voucher_id") REFERENCES "sales_vouchers" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
 -- Modify "sales_orders" table
 ALTER TABLE "sales_orders" ADD CONSTRAINT "sales_orders_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "sales_orders_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "sales_payments" table
@@ -2060,14 +2200,30 @@ ALTER TABLE "sales_points" ADD CONSTRAINT "sales_points_sales_channel_id_fkey" F
 ALTER TABLE "sales_pricelist_items" ADD CONSTRAINT "sales_pricelist_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_pricelist_items_sales_pricelist_id_fkey" FOREIGN KEY ("sales_pricelist_id") REFERENCES "sales_pricelists" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_pricelist_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "sales_pricelists" table
 ALTER TABLE "sales_pricelists" ADD CONSTRAINT "sales_pricelists_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "sales_pricelists_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
--- Modify "sales_promotion_condition_groups" table
-ALTER TABLE "sales_promotion_condition_groups" ADD CONSTRAINT "sales_promotion_condition_groups_sales_promotion_program_id_fke" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
--- Modify "sales_promotion_condition_targets" table
-ALTER TABLE "sales_promotion_condition_targets" ADD CONSTRAINT "sales_promotion_condition_targets_condition_id_fkey" FOREIGN KEY ("condition_id") REFERENCES "sales_promotion_conditions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
--- Modify "sales_promotion_conditions" table
-ALTER TABLE "sales_promotion_conditions" ADD CONSTRAINT "sales_promotion_conditions_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "sales_promotion_condition_groups" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_promotion_allocations" table
+ALTER TABLE "sales_promotion_allocations" ADD CONSTRAINT "sales_promotion_allocations_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "sales_promotion_applications" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_promotion_allocations_order_line_id_fkey" FOREIGN KEY ("order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_allocations_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
+-- Modify "sales_promotion_applications" table
+ALTER TABLE "sales_promotion_applications" ADD CONSTRAINT "sales_promotion_applications_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_applications_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_applications_reward_id_fkey" FOREIGN KEY ("reward_id") REFERENCES "sales_promotion_rewards" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_applications_voucher_id_fkey" FOREIGN KEY ("voucher_id") REFERENCES "sales_vouchers" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
+-- Modify "sales_promotion_channels" table
+ALTER TABLE "sales_promotion_channels" ADD CONSTRAINT "sales_promotion_channels_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_promotion_channels_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+-- Modify "sales_promotion_points" table
+ALTER TABLE "sales_promotion_points" ADD CONSTRAINT "sales_promotion_points_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_promotion_points_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+-- Modify "sales_promotion_pricelists" table
+ALTER TABLE "sales_promotion_pricelists" ADD CONSTRAINT "sales_promotion_pricelists_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_promotion_pricelists_sales_pricelist_id_fkey" FOREIGN KEY ("sales_pricelist_id") REFERENCES "sales_pricelists" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+-- Modify "sales_promotion_reward_categories" table
+ALTER TABLE "sales_promotion_reward_categories" ADD CONSTRAINT "sales_promotion_reward_categories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_reward_categories_reward_id_fkey" FOREIGN KEY ("reward_id") REFERENCES "sales_promotion_rewards" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_promotion_reward_products" table
+ALTER TABLE "sales_promotion_reward_products" ADD CONSTRAINT "sales_promotion_reward_products_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_reward_products_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_reward_products_reward_id_fkey" FOREIGN KEY ("reward_id") REFERENCES "sales_promotion_rewards" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
 -- Modify "sales_promotion_rewards" table
-ALTER TABLE "sales_promotion_rewards" ADD CONSTRAINT "sales_promotion_rewards_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+ALTER TABLE "sales_promotion_rewards" ADD CONSTRAINT "sales_promotion_rewards_gift_product_variant_id_fkey" FOREIGN KEY ("gift_product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_rewards_gift_uom_id_fkey" FOREIGN KEY ("gift_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_rewards_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_promotion_rule_categories" table
+ALTER TABLE "sales_promotion_rule_categories" ADD CONSTRAINT "sales_promotion_rule_categories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_rule_categories_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "sales_promotion_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_promotion_rule_products" table
+ALTER TABLE "sales_promotion_rule_products" ADD CONSTRAINT "sales_promotion_rule_products_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_rule_products_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_promotion_rule_products_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "sales_promotion_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_promotion_rules" table
+ALTER TABLE "sales_promotion_rules" ADD CONSTRAINT "sales_promotion_rules_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_promotion_rules_qualification_uom_id_fkey" FOREIGN KEY ("qualification_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
+-- Modify "sales_promotions" table
+ALTER TABLE "sales_promotions" ADD CONSTRAINT "sales_promotions_currency_id_fkey" FOREIGN KEY ("currency_id") REFERENCES "essential_currencies" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
 -- Modify "sales_quotation_lines" table
 ALTER TABLE "sales_quotation_lines" ADD CONSTRAINT "sales_quotation_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_quotation_lines_sales_quotation_id_fkey" FOREIGN KEY ("sales_quotation_id") REFERENCES "sales_quotations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_quotation_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "sales_quotations" table
@@ -2078,7 +2234,7 @@ ALTER TABLE "sales_refund_payments" ADD CONSTRAINT "sales_refund_payments_origin
 ALTER TABLE "sales_return_lines" ADD CONSTRAINT "sales_return_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "sales_return_lines_sales_return_id_fkey" FOREIGN KEY ("sales_return_id") REFERENCES "sales_returns" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
 -- Modify "sales_returns" table
 ALTER TABLE "sales_returns" ADD CONSTRAINT "sales_returns_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
--- Modify "sales_voucher_codes" table
-ALTER TABLE "sales_voucher_codes" ADD CONSTRAINT "sales_voucher_codes_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
--- Modify "sales_voucher_redemptions" table
-ALTER TABLE "sales_voucher_redemptions" ADD CONSTRAINT "sales_voucher_redemptions_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "sales_voucher_redemptions_voucher_code_id_fkey" FOREIGN KEY ("voucher_code_id") REFERENCES "sales_voucher_codes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE;
+-- Modify "sales_voucher_issuances" table
+ALTER TABLE "sales_voucher_issuances" ADD CONSTRAINT "sales_voucher_issuances_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_voucher_issuances_source_order_id_fkey" FOREIGN KEY ("source_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_voucher_issuances_voucher_id_fkey" FOREIGN KEY ("voucher_id") REFERENCES "sales_vouchers" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
+-- Modify "sales_vouchers" table
+ALTER TABLE "sales_vouchers" ADD CONSTRAINT "sales_vouchers_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_vouchers_promotion_id_fkey" FOREIGN KEY ("promotion_id") REFERENCES "sales_promotions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "sales_vouchers_source_order_id_fkey" FOREIGN KEY ("source_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;

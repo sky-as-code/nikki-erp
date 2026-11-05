@@ -44,3 +44,31 @@ const (
 	// by archiving or by lifecycle status. Sales does not distinguish which; the remedy is the same.
 	ReasonVariantNotSellable = "sales_order_line.variant_not_sellable"
 )
+
+// ProductPromotionExtService reads what the promotion engine matches selectors and counts
+// quantities against (BR-C03, BR-C07): a variant's template, its category with every ancestor, and
+// its base unit with that unit's category. Read-only and batched, because an order is evaluated as a
+// whole on every reprice. A variant that does not exist is absent from the answer.
+type ProductPromotionExtService interface {
+	ResolveForPromotion(ctx corectx.Context, variantIds []string) (map[string]PromotionProductFacts, error)
+
+	// ResolveUomCategories answers the UoM category of each template or variant id a rule selector
+	// names, keyed by that id, for the rule's mixed-unit warning (BR-C07).
+	ResolveUomCategories(ctx corectx.Context, templateIds []string, variantIds []string) (map[string]string, error)
+}
+
+// PromotionProductFacts is one variant as the promotion engine sees it.
+type PromotionProductFacts struct {
+	ProductVariantId  string
+	ProductTemplateId string
+
+	// CategoryIds is the variant's own category followed by every ancestor up to the root.
+	CategoryIds []string
+
+	BaseUomId         string
+	BaseUomCategoryId string
+
+	// Code and Name label a gift line created from this variant.
+	Code string
+	Name string
+}

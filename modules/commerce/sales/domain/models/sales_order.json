@@ -433,6 +433,25 @@
 			}
 		},
 		{
+			"name": "promotion_calculation_reference",
+			"label": "fields.promotion_calculation_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"metadata": { "server_assigned": true },
+			"description": {
+				"en-US": "The sha256 calculation reference of the last promotion quote repricing wrote onto this draft (D4). Confirm recomputes the quote and compares, so a draft priced under an older promotion configuration is re-quoted rather than charged a figure nobody accepted (BR-T02). It reserves nothing (BR-V07). Server-assigned: a client never writes it."
+			}
+		},
+		{
+			"name": "confirmation_revision",
+			"label": "fields.confirmation_revision",
+			"data_type": { "type": "int32", "min": 0, "max": 1000000 },
+			"default_value": "0",
+			"metadata": { "server_assigned": true },
+			"description": {
+				"en-US": "How many times this order has been confirmed, stamped by Confirm and copied onto each promotion application (BR §8.8). Always 1 once confirmed today, because a cancelled order is terminal (D1); stored so a future reset-to-draft needs no schema change."
+			}
+		},
+		{
 			"name": "initial_bill_id",
 			"label": "fields.initial_bill_id",
 			"data_type": "ulid",

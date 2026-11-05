@@ -57,7 +57,6 @@
 					"conditional_price",
 					"percentage_discount",
 					"fixed_discount",
-					"voucher",
 					"manual_discount",
 					"rounding"
 				]
@@ -73,7 +72,7 @@
 			"label": "fields.source_type",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
 			"description": {
-				"en-US": "The schema name of the thing that caused this adjustment - a promotion program, a voucher code, a combo. A plain string rather than an enum so that a new source of price change does not require a schema migration to be explainable."
+				"en-US": "The schema name of the thing that caused this adjustment - 'promotion' for a promotion benefit (source_id then names the sales_promotion_reward that granted it, D3), a combo, a manual discount. A plain string rather than an enum so that a new source of price change does not require a schema migration to be explainable."
 			}
 		},
 		{

@@ -6,7 +6,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services/pricing"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
@@ -119,15 +118,6 @@ func (this *SalesOrderCrudApplicationServiceImpl) Cancel(
 	return this.runCancelOrder(ctx, cmd)
 }
 
-func (this *SalesOrderCrudApplicationServiceImpl) ApplyVoucher(
-	ctx corectx.Context, cmd itOrder.OrderActionCommand,
-) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, PermissionApplyVoucher, cmd); cErrs != nil || err != nil {
-		return anyFailure(cErrs, err)
-	}
-	return this.runApplyVoucher(ctx, cmd)
-}
-
 func (this *SalesOrderCrudApplicationServiceImpl) ExplainPrice(
 	ctx corectx.Context, query itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
@@ -224,65 +214,6 @@ func stepsPayload(steps []services.PriceStep) []map[string]any {
 		})
 	}
 	return payload
-}
-
-// runApplyVoucher is transport only; every rule lives in services.ApplyVoucher so the operation
-// stays reachable from CQRS and from another module's port without HTTP.
-func (this *SalesOrderApplicationServiceImpl) runApplyVoucher(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[any], error) {
-	orderId := readStringParam(params, paramRecordId)
-
-	order, err := services.LoadSalesOrderForVoucher(ctx, orderId)
-	if err != nil {
-		return nil, err
-	}
-	if order == nil {
-		// A client error rather than a fault: the caller named a record that does not exist.
-		return &dyn.OpResult[any]{
-			ClientErrors: *services.OrderNotFoundErrors(orderId),
-		}, nil
-	}
-
-	// The clock is read once at the edge and passed inward, so a test can reproduce it and two gates
-	// in the same request cannot disagree about the time.
-	nowUnix := readInt64Param(params, paramNowUnix)
-	if nowUnix == 0 {
-		nowUnix = services.NowUnix()
-	}
-
-	result, vErrs, err := services.ApplyVoucher(ctx, services.ApplyVoucherParams{
-		Code:              readStringParam(params, paramVoucherCode),
-		SalesOrderId:      orderId,
-		OrgId:             order.OrgId,
-		SalesChannelId:    order.SalesChannelId,
-		SalesPointId:      order.SalesPointId,
-		AppliedProgramIds: order.AppliedProgramIds,
-
-		// An empty basket still evaluates: a program with no conditions applies, one with a minimum
-		// spend does not.
-		Facts: pricing.BasketFacts{
-			Subtotal:      order.Subtotal,
-			TotalQuantity: order.TotalQuantity,
-			NowUnix:       nowUnix,
-		},
-		NowUnix: nowUnix,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if vErrs != nil {
-		return &dyn.OpResult[any]{ClientErrors: *vErrs}, nil
-	}
-
-	return &dyn.OpResult[any]{
-		HasData: true,
-		Data: map[string]any{
-			"program_id":            result.ProgramId,
-			"accepted_program_ids":  result.AcceptedProgramIds,
-			"displaced_program_ids": result.DisplacedProgramIds,
-		},
-	}, nil
 }
 
 // readInt64Param accepts every numeric shape because a value that arrived as JSON is a float64, and
@@ -454,7 +385,10 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 
 	result, vErrs, err := services.ConfirmOrderWith(ctx,
 		readStringParam(params, paramRecordId),
-		services.ConfirmOrderOptions{ConfirmationNote: readStringParam(params, "confirmation_note")},
+		services.ConfirmOrderOptions{
+			ConfirmationNote:             readStringParam(params, "confirmation_note"),
+			AcceptedCalculationReference: readStringParam(params, paramAcceptedCalculationReference),
+		},
 		this.orderLock, this.taxCalculation, this.orderFulfillment, this.pricingBasis,
 		policy, services.FulfillmentMethodService(), this.fulfillmentReservations)
 	if err != nil {
@@ -465,12 +399,11 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 	}
 
 	data := map[string]any{
-		"sales_order_id":       result.SalesOrderId,
-		"status":               result.Status,
-		"confirmed_at":         result.ConfirmedAt,
-		"initial_bill_id":      result.InitialBillId,
-		"already_confirmed":    result.AlreadyConfirmed,
-		"redeemed_voucher_ids": result.RedeemedVoucherIds,
+		"sales_order_id":    result.SalesOrderId,
+		"status":            result.Status,
+		"confirmed_at":      result.ConfirmedAt,
+		"initial_bill_id":   result.InitialBillId,
+		"already_confirmed": result.AlreadyConfirmed,
 
 		// In the response, not just the log: a kiosk that believed a confirm was complete would
 		// dispense goods against an order with no fulfilment request.
@@ -478,6 +411,10 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 	}
 	if result.Pricing != nil {
 		data["grand_total"] = result.Pricing.GrandTotal
+	}
+	if result.Promotions != nil {
+		data["promotion_applications"] = result.Promotions.ApplicationIds
+		data["issued_vouchers"] = result.Promotions.IssuedVouchers
 	}
 
 	// The whole order and the whole bill, not just their ids: the caller's next act is to ask for
@@ -519,7 +456,6 @@ func (this *SalesOrderApplicationServiceImpl) runCancelOrder(
 			"sales_order_id":           result.SalesOrderId,
 			"status":                   result.Status,
 			"cancelled_at":             result.CancelledAt,
-			"released_voucher_ids":     result.ReleasedVoucherIds,
 			"released_fulfillment_ids": result.ReleasedFulfillmentIds,
 			"pending":                  result.Pending,
 			"refund_request_id":        result.RefundRequestId,
@@ -656,7 +592,9 @@ func (this *SalesOrderCrudApplicationServiceImpl) runPartyAssignment(
 	if vErrs != nil {
 		return &dyn.OpResult[any]{ClientErrors: *vErrs}, nil
 	}
-	return &dyn.OpResult[any]{HasData: false}, nil
+	// HasData true: the REST layer answers a result without data as not found, which reported a
+	// successful assignment as a failure.
+	return &dyn.OpResult[any]{HasData: true, Data: map[string]any{"sales_order_id": params.SalesOrderId}}, nil
 }
 
 // readPartyAssignment distinguishes "not mentioned" from "explicitly cleared": a field present but

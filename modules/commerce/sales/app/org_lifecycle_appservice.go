@@ -33,6 +33,15 @@ var writeOrder = []string{
 // cleanUpOrder lists every org-scoped resource children first, as their foreign keys require. The
 // association rows are not here: they have no resource engine and are removed before these.
 var cleanUpOrder = []string{
+	// Promotion records first: an application holds the order, a voucher its source order. The
+	// promotion's scope junctions go with it by cascade.
+	models.SalesPromotionAllocationSchemaName, models.SalesPromotionApplicationSchemaName,
+	models.SalesVoucherIssuanceSchemaName, models.SalesOrderVoucherSchemaName,
+	models.SalesOrderPromotionSelectionSchemaName, models.SalesVoucherSchemaName,
+	models.SalesPromotionRuleProductSchemaName, models.SalesPromotionRuleCategorySchemaName,
+	models.SalesPromotionRewardProductSchemaName, models.SalesPromotionRewardCategorySchemaName,
+	models.SalesPromotionRuleSchemaName, models.SalesPromotionRewardSchemaName,
+	models.SalesPromotionSchemaName,
 	models.SalesBillLineSchemaName, models.SalesBillRelationSchemaName,
 	models.SalesBillingInstructionSchemaName, models.SalesBillingIssuanceAttemptSchemaName,
 	models.SalesRefundPaymentSchemaName, models.SalesBillSchemaName,
@@ -47,11 +56,7 @@ var cleanUpOrder = []string{
 	models.SalesOrderAdjustmentSchemaName, models.SalesOrderEventSchemaName,
 	models.SalesOrderLineAllocationSchemaName, models.SalesOrderLineComponentSchemaName,
 	models.SalesOrderLineSchemaName, models.SalesPaymentSchemaName,
-	models.SalesPricelistItemSchemaName, models.SalesPromotionCompatibilitySchemaName,
-	models.SalesPromotionConditionGroupSchemaName, models.SalesPromotionConditionTargetSchemaName,
-	models.SalesPromotionConditionSchemaName, models.SalesPromotionProgramSchemaName,
-	models.SalesPromotionRewardSchemaName, models.SalesQuotationLineSchemaName,
-	models.SalesVoucherCodeSchemaName, models.SalesVoucherRedemptionSchemaName,
+	models.SalesPricelistItemSchemaName, models.SalesQuotationLineSchemaName,
 }
 
 type OrgLifecycleParam struct {

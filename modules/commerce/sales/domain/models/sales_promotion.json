@@ -1,0 +1,446 @@
+{
+	"name": "sales_promotion",
+	"label": "sales_promotion.label",
+	"table_name": "sales_promotions",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "reference",
+	"default_search_fields": [
+		"reference",
+		"name"
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sls_promos_tid_org_ref",
+			"fields": [
+				"org_id",
+				"reference"
+			]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_promos_tid_org_status_window",
+			"fields": [
+				"org_id",
+				"status",
+				"is_archived",
+				"starts_at",
+				"ends_at"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "reference",
+			"label": "fields.reference",
+			"data_type": {
+				"type": "resource_code",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "The administrative code, issued from the org's sales.promotion Sequence (prefix KM) when the promotion is created and immutable afterwards (BR §8.2). Unique within the org."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 200
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Internal name, required."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 2000
+			},
+			"description": {
+				"en-US": "Internal explanation. Never shown to the customer: that is the reward's order_description."
+			}
+		},
+		{
+			"name": "program_type",
+			"label": "fields.program_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"automatic",
+					"discount_code",
+					"coupon",
+					"buy_x_get_y",
+					"next_order_coupon"
+				]
+			},
+			"required_for_create": true,
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "How the promotion is triggered and computed (BR §3.1). Immutable once a voucher or an application exists (BR-L02): create a new promotion instead."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"draft",
+					"active",
+					"suspended"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"metadata": {
+				"track_history": true,
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Business lifecycle (BR-L01), moved only by the activate and suspend actions. Expired and exhausted are derived from the window and the usage counter, never stored; archiving is is_archived."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "The currency every amount of this promotion is in (BR-C06). An order in another currency is never eligible: there is no conversion. Immutable once a voucher or an application exists."
+			}
+		},
+		{
+			"name": "starts_at",
+			"label": "fields.starts_at",
+			"data_type": "datetime",
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "Inclusive start of validity, server time (BR-C02). Null means no lower bound."
+			}
+		},
+		{
+			"name": "ends_at",
+			"label": "fields.ends_at",
+			"data_type": "datetime",
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "Exclusive end of validity. Null means no upper bound. Must be after starts_at when both are set."
+			}
+		},
+		{
+			"name": "usage_limit",
+			"label": "fields.usage_limit",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000000
+			},
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "How many confirmed orders may receive this promotion; null is unlimited. Never lowered below used_count (BR-L02)."
+			}
+		},
+		{
+			"name": "used_count",
+			"label": "fields.used_count",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000000
+			},
+			"default_value": "0",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Confirmed applications holding a use: the physical counter Confirm increments with a conditional UPDATE and Cancel releases (D5). It is the effective_usage_count clients read (BR §8.11). Server-only."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 100000
+			},
+			"required_for_create": true,
+			"default_value": "10",
+			"description": {
+				"en-US": "Application order across promotions on one order: smaller first, ties broken by id (BR-R14, BR-R15)."
+			}
+		},
+		{
+			"name": "next_voucher_validity_days",
+			"label": "fields.next_voucher_validity_days",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 36500
+			},
+			"description": {
+				"en-US": "Only for next_order_coupon: the issued coupon expires this many 24-hour days after the source order's confirmation, capped at ends_at (BR-V10)."
+			}
+		},
+		{
+			"name": "config_version",
+			"label": "fields.config_version",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000000
+			},
+			"default_value": "1",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Bumped by every change of configuration, rules, rewards, selectors or scope (BR-L02). Snapshotted on each application and part of the calculation reference, so a quote priced under an older configuration is detected. Server-only."
+			}
+		},
+		{
+			"name": "availability",
+			"label": "fields.availability",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"archived",
+					"not_started",
+					"expired",
+					"exhausted",
+					"available"
+				]
+			},
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"case": {
+						"when": [
+							{
+								"if": {
+									"op": "eq",
+									"args": [
+										{
+											"field": "is_archived"
+										},
+										{
+											"value": true
+										}
+									]
+								},
+								"then": {
+									"value": "archived"
+								}
+							},
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{
+											"op": "is_not_null",
+											"args": [
+												{
+													"field": "starts_at"
+												}
+											]
+										},
+										{
+											"op": "gt",
+											"args": [
+												{
+													"field": "starts_at"
+												},
+												{
+													"function": "now"
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "not_started"
+								}
+							},
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{
+											"op": "is_not_null",
+											"args": [
+												{
+													"field": "ends_at"
+												}
+											]
+										},
+										{
+											"op": "lte",
+											"args": [
+												{
+													"field": "ends_at"
+												},
+												{
+													"function": "now"
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "expired"
+								}
+							},
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{
+											"op": "is_not_null",
+											"args": [
+												{
+													"field": "usage_limit"
+												}
+											]
+										},
+										{
+											"op": "gte",
+											"args": [
+												{
+													"function": "coalesce",
+													"args": [
+														{
+															"field": "used_count"
+														},
+														{
+															"value": 0
+														}
+													]
+												},
+												{
+													"field": "usage_limit"
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "exhausted"
+								}
+							}
+						],
+						"else": {
+							"value": "available"
+						}
+					}
+				}
+			},
+			"description": {
+				"en-US": "Derived from the window and the usage counter at read time (BR-L01): archived, not_started, expired, exhausted or available. Independent of status: an active promotion may still be expired."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
+		"core.basemodel.versioned_model"
+	],
+	"edges_to": [
+		{
+			"edge": "currency",
+			"label": {
+				"en-US": "Currency"
+			},
+			"type": "many:one",
+			"dest_schema": "essential_currency",
+			"key_map": {
+				"currency_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "sales_channels",
+			"label": {
+				"en-US": "Sales channels"
+			},
+			"type": "many:many",
+			"peer_schema": "sales_channel",
+			"through_schema": "sales_promotion_channel",
+			"src_field_prefix": "promotion",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_points",
+			"label": {
+				"en-US": "Sales points"
+			},
+			"type": "many:many",
+			"peer_schema": "sales_point",
+			"through_schema": "sales_promotion_point",
+			"src_field_prefix": "promotion",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_pricelists",
+			"label": {
+				"en-US": "Pricelists"
+			},
+			"type": "many:many",
+			"peer_schema": "sales_pricelist",
+			"through_schema": "sales_promotion_pricelist",
+			"src_field_prefix": "promotion",
+			"on_delete": "CASCADE"
+		}
+	],
+	"edges_from": [
+		{
+			"edge": "rules",
+			"label": {
+				"en-US": "Rules"
+			},
+			"existing": {
+				"src_schema": "sales_promotion_rule",
+				"src_edge": "promotion"
+			}
+		},
+		{
+			"edge": "rewards",
+			"label": {
+				"en-US": "Rewards"
+			},
+			"existing": {
+				"src_schema": "sales_promotion_reward",
+				"src_edge": "promotion"
+			}
+		}
+	]
+}

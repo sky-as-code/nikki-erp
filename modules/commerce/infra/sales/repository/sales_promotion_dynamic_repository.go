@@ -5,68 +5,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesPromotionProgramRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionProgramRepository {
-	return &SalesPromotionProgramRepositoryImpl{CrudRepository: base}
+// The promotion repositories build on the composable default (baserepo). The atomic usage
+// counters of Confirm and Cancel (D5) are the only hand-written SQL this family will need.
+
+func NewSalesPromotionRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionRepository {
+	return &SalesPromotionRepositoryImpl{CrudRepository: base}
 }
 
-type SalesPromotionProgramRepositoryImpl struct {
+type SalesPromotionRepositoryImpl struct {
 	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionConditionGroupRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionConditionGroupRepository {
-	return &SalesPromotionConditionGroupRepositoryImpl{CrudRepository: base}
-}
-
-type SalesPromotionConditionGroupRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesPromotionConditionRepository(
+// NewSalesPromotionChildRepository serves a rule, a reward, a selector, a voucher or a
+// confirmed-order record: none needs more than the default yet.
+func NewSalesPromotionChildRepository(
 	base dynamicresource.CrudRepository,
-) itPromotion.SalesPromotionConditionRepository {
-	return &SalesPromotionConditionRepositoryImpl{CrudRepository: base}
+) itPromotion.SalesPromotionChildRepository {
+	return &SalesPromotionChildRepositoryImpl{CrudRepository: base}
 }
 
-type SalesPromotionConditionRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesPromotionConditionTargetRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionConditionTargetRepository {
-	return &SalesPromotionConditionTargetRepositoryImpl{CrudRepository: base}
-}
-
-type SalesPromotionConditionTargetRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesPromotionRewardRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionRewardRepository {
-	return &SalesPromotionRewardRepositoryImpl{CrudRepository: base}
-}
-
-type SalesPromotionRewardRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesPromotionCompatibilityRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionCompatibilityRepository {
-	return &SalesPromotionCompatibilityRepositoryImpl{CrudRepository: base}
-}
-
-type SalesPromotionCompatibilityRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesVoucherCodeRepository(base dynamicresource.CrudRepository) itPromotion.SalesVoucherCodeRepository {
-	return &SalesVoucherCodeRepositoryImpl{CrudRepository: base}
-}
-
-type SalesVoucherCodeRepositoryImpl struct {
-	dynamicresource.CrudRepository
-}
-
-func NewSalesVoucherRedemptionRepository(base dynamicresource.CrudRepository) itPromotion.SalesVoucherRedemptionRepository {
-	return &SalesVoucherRedemptionRepositoryImpl{CrudRepository: base}
-}
-
-type SalesVoucherRedemptionRepositoryImpl struct {
+type SalesPromotionChildRepositoryImpl struct {
 	dynamicresource.CrudRepository
 }

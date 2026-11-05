@@ -1,0 +1,32 @@
+{
+	"name": "sales_promotion_channel",
+	"label": "sales_promotion_channel.label",
+	"table_name": "sales_promotion_channels",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "sls_promo_chan_tid_promo_chan", "fields": ["promotion_id", "sales_channel_id"] }
+	],
+	"search_indexes": [{ "index_name": "sls_promo_chan_tid_chan", "fields": ["sales_channel_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The promotion this scope row belongs to. Written only through the promotion's manage_channels action, which checks the target is in the promotion's org; there is no CRUD on this junction."
+			}
+		},
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A channel the promotion may run on. BR-S01 needs the order's channel AND its point to be linked; no row means no channel qualifies (no wildcard, BR-S02)."
+			}
+		}
+	]
+}

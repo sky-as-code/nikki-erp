@@ -19,6 +19,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 	itSeq "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/sequence"
+	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
@@ -127,6 +128,17 @@ func InitExternal() error {
 			// The DOMAIN service, per the port's own note: authorization was established by the
 			// request that started this, so there is no application-service counterpart to call.
 			return &paymentOrderAdapter{orders: orders}
+		},
+		func(
+			variants itProduct.ProductVariantDomainService, basis itProduct.ProductPricingBasisService,
+			uoms itUom.UomConversionAppService,
+		) itExt.ProductPromotionExtService {
+			// An adapter: the promotion engine needs template, category ancestry and unit category,
+			// which three published readers answer between them.
+			return &productPromotionAdapter{variants: variants, basis: basis, uoms: uoms}
+		},
+		func(uoms itUom.UomConversionAppService) itExt.UomConversionExtService {
+			return uoms
 		},
 		func(currencySvc itCurrency.CurrencyAppService) itExt.OrgDefaultsLookupExtService {
 			return &orgDefaultsLookup{currencySvc: currencySvc}

@@ -28,7 +28,23 @@ func InitJunctionRepositories() error {
 		registerChannelPaymentRelRepository(),
 		registerPointPaymentRelRepository(),
 		registerChannelFulfillmentMethodRepository(),
+		registerHubOnlyRepository(models.SalesPromotionChannelSchemaName),
+		registerHubOnlyRepository(models.SalesPromotionPointSchemaName),
+		registerHubOnlyRepository(models.SalesPromotionPricelistSchemaName),
 	)
+}
+
+// registerHubOnlyRepository installs a promotion scope junction's repository for the reads and
+// copies the promotion services make; its links are written through crud.ManageM2m.
+func registerHubOnlyRepository(schemaName string) error {
+	return deps.Invoke(func(param dynamicresource.BuildParam) error {
+		repo, err := newJunctionRepository(param, schemaName)
+		if err != nil {
+			return err
+		}
+		services.InstallResource(schemaName, repo, nil)
+		return nil
+	})
 }
 
 func registerChannelPaymentRelRepository() error {

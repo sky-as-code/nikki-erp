@@ -39,6 +39,10 @@ type SalesOrderApplicationService interface {
 	Confirm(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
 	Cancel(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
 	ApplyVoucher(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
+	// The draft promotion actions answer the PromotionQuote; none consumes usage (BR-V07).
+	RemoveVoucher(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
+	SelectPromotionReward(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
+	PreviewPromotions(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
 	ExplainPrice(ctx corectx.Context, query OrderActionCommand) (*dyn.OpResult[any], error)
 	GrantManualDiscount(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
 	RevokeManualDiscount(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)

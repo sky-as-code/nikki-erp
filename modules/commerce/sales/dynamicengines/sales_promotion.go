@@ -9,274 +9,156 @@ import (
 	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-// The promotion and voucher resources: plain CRUD master data the pricing engine reads.
+// The promotion and voucher resources (BR §8). The promotion, its rules and its rewards are
+// editable configuration; the selectors and the confirmed-order records are read-only to clients.
 
-type salesPromotionProgramEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_program"`
+func readOnlyAppService(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
+	return app.NewSalesPromotionReadOnlyApplicationService(base)
 }
 
-func registerSalesPromotionProgramEngine() error {
+func childRepository(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
+	return repo.NewSalesPromotionChildRepository(base)
+}
+
+type salesPromotionEngineParam struct {
+	dig.In
+
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion"`
+}
+
+func registerSalesPromotionEngine() error {
 	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesPromotionProgramSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
+		dynamicresource.EngineDependencyName(models.SalesPromotionSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionProgramSchemaName,
+				SchemaName: models.SalesPromotionSchemaName,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionProgramRepository(base)
+					return repo.NewSalesPromotionRepository(base)
+				},
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
+					return services.NewSalesPromotionDomainService(base)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionProgramApplicationService(base, pricingChangedPub)
+					return app.NewSalesPromotionApplicationService(base)
 				},
 			}, param)
 		},
 	)
 	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionProgramEngineParam) itPromotion.SalesPromotionProgramRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionProgramRepository)
+		func(p salesPromotionEngineParam) itPromotion.SalesPromotionRepository {
+			return p.Engine.Repository().(itPromotion.SalesPromotionRepository)
 		},
-		func(p salesPromotionProgramEngineParam) itPromotion.SalesPromotionProgramApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionProgramApplicationService)
+		func(p salesPromotionEngineParam) itPromotion.SalesPromotionDomainService {
+			return p.Engine.DomainService().(itPromotion.SalesPromotionDomainService)
+		},
+		func(p salesPromotionEngineParam) itPromotion.SalesPromotionApplicationService {
+			return p.Engine.ApplicationService().(itPromotion.SalesPromotionApplicationService)
 		},
 	))
 }
 
-type salesPromotionConditionGroupEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_group"`
-}
-
-func registerSalesPromotionConditionGroupEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesPromotionConditionGroupSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
+func registerSalesPromotionRuleEngine() error {
+	return deps.RegisterNamed(
+		dynamicresource.EngineDependencyName(models.SalesPromotionRuleSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionConditionGroupSchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionConditionGroupRepository(base)
+				SchemaName:      models.SalesPromotionRuleSchemaName,
+				NewRepositoryFn: childRepository,
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
+					return services.NewSalesPromotionRuleDomainService(base)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionConditionGroupApplicationService(base, pricingChangedPub)
+					return app.NewSalesPromotionRuleApplicationService(base)
+				},
+				ComputedFunctions: map[string]dynamicresource.ComputedFieldFn{
+					services.FunctionRuleHasMixedUom: services.RuleHasMixedUomFn,
 				},
 			}, param)
 		},
 	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionConditionGroupEngineParam) itPromotion.SalesPromotionConditionGroupRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionConditionGroupRepository)
-		},
-		func(p salesPromotionConditionGroupEngineParam) itPromotion.SalesPromotionConditionGroupApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionConditionGroupApplicationService)
-		},
-	))
-}
-
-type salesPromotionConditionEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition"`
-}
-
-func registerSalesPromotionConditionEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesPromotionConditionSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
-			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionConditionSchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionConditionRepository(base)
-				},
-				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionConditionApplicationService(base, pricingChangedPub)
-				},
-			}, param)
-		},
-	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionConditionEngineParam) itPromotion.SalesPromotionConditionRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionConditionRepository)
-		},
-		func(p salesPromotionConditionEngineParam) itPromotion.SalesPromotionConditionApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionConditionApplicationService)
-		},
-	))
-}
-
-type salesPromotionConditionTargetEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_target"`
-}
-
-func registerSalesPromotionConditionTargetEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesPromotionConditionTargetSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
-			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionConditionTargetSchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionConditionTargetRepository(base)
-				},
-				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionConditionTargetApplicationService(base, pricingChangedPub)
-				},
-			}, param)
-		},
-	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionConditionTargetEngineParam) itPromotion.SalesPromotionConditionTargetRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionConditionTargetRepository)
-		},
-		func(p salesPromotionConditionTargetEngineParam) itPromotion.SalesPromotionConditionTargetApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionConditionTargetApplicationService)
-		},
-	))
-}
-
-type salesPromotionRewardEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_reward"`
 }
 
 func registerSalesPromotionRewardEngine() error {
-	err := deps.RegisterNamed(
+	return deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.SalesPromotionRewardSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
-			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionRewardSchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionRewardRepository(base)
-				},
-				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionRewardApplicationService(base, pricingChangedPub)
-				},
-			}, param)
-		},
-	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionRewardEngineParam) itPromotion.SalesPromotionRewardRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionRewardRepository)
-		},
-		func(p salesPromotionRewardEngineParam) itPromotion.SalesPromotionRewardApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionRewardApplicationService)
-		},
-	))
-}
-
-type salesPromotionCompatibilityEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_compatibility"`
-}
-
-func registerSalesPromotionCompatibilityEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesPromotionCompatibilitySchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
-			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesPromotionCompatibilitySchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesPromotionCompatibilityRepository(base)
-				},
-				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesPromotionCompatibilityApplicationService(base, pricingChangedPub)
-				},
-			}, param)
-		},
-	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesPromotionCompatibilityEngineParam) itPromotion.SalesPromotionCompatibilityRepository {
-			return p.Engine.Repository().(itPromotion.SalesPromotionCompatibilityRepository)
-		},
-		func(p salesPromotionCompatibilityEngineParam) itPromotion.SalesPromotionCompatibilityApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesPromotionCompatibilityApplicationService)
-		},
-	))
-}
-
-type salesVoucherCodeEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_code"`
-}
-
-func registerSalesVoucherCodeEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesVoucherCodeSchemaName),
-		func(
-			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) dynamicresource.DynamicResourceEngineOnion {
-			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName: models.SalesVoucherCodeSchemaName,
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesVoucherCodeRepository(base)
-				},
-				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesVoucherCodeApplicationService(base, pricingChangedPub)
-				},
-			}, param)
-		},
-	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesVoucherCodeEngineParam) itPromotion.SalesVoucherCodeRepository {
-			return p.Engine.Repository().(itPromotion.SalesVoucherCodeRepository)
-		},
-		func(p salesVoucherCodeEngineParam) itPromotion.SalesVoucherCodeApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesVoucherCodeApplicationService)
-		},
-	))
-}
-
-// The redemption ledger is read-only: a writable row could forge a discount's provenance or
-// release a hold another order relies on.
-type salesVoucherRedemptionEngineParam struct {
-	dig.In
-
-	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_redemption"`
-}
-
-func registerSalesVoucherRedemptionEngine() error {
-	err := deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(models.SalesVoucherRedemptionSchemaName),
 		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
-				SchemaName:  models.SalesVoucherRedemptionSchemaName,
-				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
-					return repo.NewSalesVoucherRedemptionRepository(base)
+				SchemaName:      models.SalesPromotionRewardSchemaName,
+				NewRepositoryFn: childRepository,
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
+					return services.NewSalesPromotionRewardDomainService(base)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
-					return app.NewSalesVoucherRedemptionApplicationService(base)
+					return app.NewSalesPromotionRewardApplicationService(base)
 				},
 			}, param)
 		},
 	)
-	return stdErr.Join(err, deps.Register(
-		func(p salesVoucherRedemptionEngineParam) itPromotion.SalesVoucherRedemptionRepository {
-			return p.Engine.Repository().(itPromotion.SalesVoucherRedemptionRepository)
+}
+
+func registerSalesVoucherEngine() error {
+	return deps.RegisterNamed(
+		dynamicresource.EngineDependencyName(models.SalesVoucherSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
+				SchemaName:      models.SalesVoucherSchemaName,
+				NewRepositoryFn: childRepository,
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
+					return services.NewSalesVoucherDomainService(base)
+				},
+				NewAppServiceFn: app.NewSalesVoucherApplicationService,
+			}, param)
 		},
-		func(p salesVoucherRedemptionEngineParam) itPromotion.SalesVoucherRedemptionApplicationService {
-			return p.Engine.ApplicationService().(itPromotion.SalesVoucherRedemptionApplicationService)
-		},
-	))
+	)
+}
+
+// promotionReadOnlySchemas are served for reading only. Their domain service is the default and
+// stays writable for the flows that own the rows (manage_* actions, Confirm, Cancel).
+var promotionReadOnlySchemas = []string{
+	models.SalesPromotionRuleProductSchemaName,
+	models.SalesPromotionRuleCategorySchemaName,
+	models.SalesPromotionRewardProductSchemaName,
+	models.SalesPromotionRewardCategorySchemaName,
+	models.SalesOrderVoucherSchemaName,
+	models.SalesOrderPromotionSelectionSchemaName,
+	models.SalesPromotionApplicationSchemaName,
+	models.SalesPromotionAllocationSchemaName,
+	models.SalesVoucherIssuanceSchemaName,
+}
+
+func registerPromotionReadOnlyEngines() error {
+	errs := make([]error, 0, len(promotionReadOnlySchemas))
+	for _, schemaName := range promotionReadOnlySchemas {
+		name := schemaName
+		errs = append(errs, deps.RegisterNamed(
+			dynamicresource.EngineDependencyName(name),
+			func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+				return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
+					SchemaName:      name,
+					NewRepositoryFn: childRepository,
+					NewAppServiceFn: readOnlyAppService,
+				}, param)
+			},
+		))
+	}
+	return stdErr.Join(errs...)
+}
+
+// forcePromotionEngines builds the promotion onions that publish no typed layer of their own.
+func forcePromotionEngines() error {
+	_, err := dynamicresource.ResolveEngines(PromotionEngineSchemaNames()[1:]...)
+	return err
+}
+
+// PromotionEngineSchemaNames lists every promotion resource with an onion, in registration order.
+func PromotionEngineSchemaNames() []string {
+	return append([]string{
+		models.SalesPromotionSchemaName, models.SalesPromotionRuleSchemaName, models.SalesPromotionRewardSchemaName,
+		models.SalesVoucherSchemaName,
+	}, promotionReadOnlySchemas...)
 }

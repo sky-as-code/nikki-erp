@@ -13,8 +13,8 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
-// The expiry sweep. A stale draft holds voucher (and later stock) reservations that block other
-// customers, so it is expired to release them. It runs hourly because the window is measured in
+// The expiry sweep. A stale draft holds stock reservations that block other customers, so it is
+// expired to release them. It runs hourly because the window is measured in
 // hours (draft_order_expiry_hours, default 24). The cron registry applies no distributed lock, but
 // each expiry re-reads the order in its own transaction and moves it only from `draft`, so a second
 // instance cannot expire it twice.
@@ -72,8 +72,7 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 	if err != nil {
 		this.logError(ctx, "sales expiry: expiring stale drafts failed", err)
 	} else if len(orders.ExpiredOrderIds) > 0 {
-		this.logInfo(ctx, "sales expiry: expired drafts", len(orders.ExpiredOrderIds),
-			len(orders.ReleasedVoucherCodeIds))
+		this.logInfo(ctx, "sales expiry: expired drafts", len(orders.ExpiredOrderIds))
 	}
 
 	// Bookkeeping for the payment deadline: every gate already decides expiry on the clock, so
@@ -81,7 +80,7 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 	if expired, err := services.ExpireUnpaidOrders(ctx, now, expiryPageSize); err != nil {
 		this.logError(ctx, "sales expiry: stamping unpaid orders past their deadline failed", err)
 	} else if expired > 0 {
-		this.logInfo(ctx, "sales expiry: stamped unpaid orders past their deadline", expired, 0)
+		this.logInfo(ctx, "sales expiry: stamped unpaid orders past their deadline", expired)
 	}
 
 	quotations, err := services.ExpireLapsedQuotations(ctx, now, expiryPageSize)
@@ -89,7 +88,7 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 		this.logError(ctx, "sales expiry: expiring lapsed quotations failed", err)
 	} else if len(quotations.ExpiredQuotationIds) > 0 {
 		this.logInfo(ctx, "sales expiry: expired quotations",
-			len(quotations.ExpiredQuotationIds), 0)
+			len(quotations.ExpiredQuotationIds))
 	}
 
 	// Releases the stock of a hold nobody claimed. It never refunds and never asks for an invoice:
@@ -103,7 +102,7 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 	}
 	if len(fulfillments.ExpiredFulfillmentIds) > 0 {
 		this.logInfo(ctx, "sales expiry: expired fulfillment reservations",
-			len(fulfillments.ExpiredFulfillmentIds), 0)
+			len(fulfillments.ExpiredFulfillmentIds))
 	}
 	return nil
 }
@@ -115,11 +114,10 @@ func (this *ExpiryJobs) logError(ctx context.Context, message string, err error)
 	this.logger.Error(ctx, message, err)
 }
 
-// logInfo reports what the sweep did. The released-code count is logged separately because it is
-// the part with an effect outside these orders, and what an investigator greps for.
-func (this *ExpiryJobs) logInfo(ctx context.Context, message string, count, releasedCodes int) {
+// logInfo reports what the sweep did.
+func (this *ExpiryJobs) logInfo(ctx context.Context, message string, count int) {
 	if this.logger == nil {
 		return
 	}
-	this.logger.Infof(ctx, "%s: %d, released voucher codes: %d", message, count, releasedCodes)
+	this.logger.Infof(ctx, "%s: %d", message, count)
 }

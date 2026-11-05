@@ -123,6 +123,15 @@
 			"type": "many:one",
 			"dest_schema": "sales_channel",
 			"key_map": { "sales_channel_id": "id" }
+		},
+		{
+			"edge": "promotions",
+			"label": { "en-US": "Promotions" },
+			"type": "many:many",
+			"peer_schema": "sales_promotion",
+			"through_schema": "sales_promotion_point",
+			"src_field_prefix": "sales_point",
+			"on_delete": "NO ACTION"
 		}
 	]
 }

@@ -70,9 +70,6 @@ type ConfirmOrderResult struct {
 
 	Pricing *RepriceResult
 
-	// RedeemedVoucherIds are the reservations turned into real uses by this confirm.
-	RedeemedVoucherIds []string
-
 	// Fulfillment is what Inventory answered. Nil when the order needed no fulfilment at all - every
 	// line a service or a digital item - which is legitimate, so a caller that must know whether goods
 	// are coming reads this rather than assuming a reservation exists.
@@ -85,6 +82,10 @@ type ConfirmOrderResult struct {
 
 	// Pending names the steps this confirm did not complete.
 	Pending []string
+
+	// Promotions is what was committed: the applications and the next-order coupons issued. A replay
+	// answers the same records (BR-T05).
+	Promotions *ConfirmedPromotions
 }
 
 // The refusal reasons confirm can produce.
@@ -92,7 +93,6 @@ const (
 	ReasonNotConfirmable   = "sales_order.not_confirmable"
 	ReasonEmptyOrder       = "sales_order.no_lines"
 	ReasonChannelMissing   = "sales_order.sales_channel_missing"
-	ReasonVoucherExhausted = "sales_order.voucher_exhausted"
 	ReasonLockUnavailable  = "sales_order.locked"
 )
 
@@ -102,6 +102,11 @@ type ConfirmOrderOptions struct {
 	// AutoConfirmedNote, so the audit trail reads the same for every system confirm.
 	ConfirmationNote string
 	Automatic        bool
+
+	// AcceptedCalculationReference is the promotion quote the caller accepted. Empty means the one
+	// stored on the draft by its last reprice (a kiosk sends none). A mismatch refuses the confirm
+	// with requote_required and the fresh quote (BR-T02, D4).
+	AcceptedCalculationReference string
 }
 
 // ConfirmOrder commits a draft order with no note. See ConfirmOrderWith.
@@ -190,7 +195,7 @@ func confirmUnderLock(
 	// A confirm that already happened answers with what it produced rather than refusing. The
 	// client that lost the response is the ordinary case, and the alternative - an error - pushes it
 	// towards creating a second order for a sale that is already on the books.
-	replay, vErrs, err := replayConfirm(record)
+	replay, vErrs, err := replayConfirm(ctx, record)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
@@ -208,16 +213,17 @@ func confirmUnderLock(
 	}
 
 	// Step 2: reprice, because a catalogue price may have moved since the draft was last touched.
+	// The accepted quote is read BEFORE, since the reprice stores the fresh reference.
+	accepted := opts.AcceptedCalculationReference
+	if accepted == "" {
+		accepted = stringOf(record, models.SalesOrderFieldPromotionCalcReference)
+	}
 	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
-
-	// Step 3: redeem the vouchers before the status moves, so a voucher exhausted meanwhile fails
-	// the confirm with the order still a draft - editable, and confirmable again with another code.
-	redeemed, vErrs, err := redeemOrderVouchers(ctx, orderId)
-	if err != nil || vErrs != nil {
-		return nil, vErrs, err
+	if vErrs := assertQuoteAccepted(accepted, priced.Promotion); vErrs != nil {
+		return nil, vErrs, nil
 	}
 
 	// Step 3b: for a kiosk sale ONLY, create the fulfillment and hold its stock BEFORE the order is
@@ -240,12 +246,11 @@ func confirmUnderLock(
 	if opts.Automatic {
 		note = models.AutoConfirmedNote
 	}
-	initialBillId, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy, note)
-	if cErrs := numberingRefusalOf(err); cErrs != nil {
-		return nil, cErrs, nil
-	}
+	initialBillId, promotions, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy, note, priced.Promotion)
 	if err != nil {
-		return nil, nil, err
+		return refusedConfirm(ctx, orderId, err, kioskFulfillment != nil, confirmDeps{
+			taxSvc: taxSvc, policy: policy, basisSvc: basisSvc, reservations: reservations,
+		})
 	}
 
 	// Step 5: ask Inventory to hold the goods, AFTER the order is committed and outside its
@@ -270,10 +275,10 @@ func confirmUnderLock(
 		ConfirmedAt:        confirmedAt.Format(time.RFC3339),
 		InitialBillId:      initialBillId,
 		Pricing:            priced,
-		RedeemedVoucherIds: redeemed,
 		Fulfillment:        fulfilment,
 		KioskFulfillment:   kioskFulfillment,
 		Pending:            pendingConfirmSteps(fulfilment, vErrs, kioskFulfillment),
+		Promotions:         promotions,
 	}, nil, nil
 }
 
@@ -331,7 +336,9 @@ func describeFirstViolation(vErrs *ft.ClientErrors) string {
 // The bill is deliberately NOT re-derived here: initial_bill_id names the bill the FIRST confirm
 // raised, and searching for a current one would answer with whatever a later split or merge left
 // open, which is a different question.
-func replayConfirm(record dmodel.DynamicFields) (*ConfirmOrderResult, *ft.ClientErrors, error) {
+func replayConfirm(
+	ctx corectx.Context, record dmodel.DynamicFields,
+) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	if stringOf(record, models.SalesOrderFieldStatus) != string(models.SalesOrderStatusConfirmed) {
 		return nil, nil, nil
 	}
@@ -353,12 +360,18 @@ func replayConfirm(record dmodel.DynamicFields) (*ConfirmOrderResult, *ft.Client
 		confirmedAt = at.GoTime().Format(time.RFC3339)
 	}
 
+	promotions, err := loadConfirmedPromotions(ctx, orderId)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return &ConfirmOrderResult{
 		SalesOrderId:     orderId,
 		Status:           string(models.SalesOrderStatusConfirmed),
 		ConfirmedAt:      confirmedAt,
 		InitialBillId:    billId,
 		AlreadyConfirmed: true,
+		Promotions:       promotions,
 
 		// Nothing is repriced, redeemed or reserved on a replay, so those stay empty rather than
 		// restating work this call did not do.
@@ -404,49 +417,6 @@ func assertConfirmable(
 	return nil, nil
 }
 
-// redeemOrderVouchers turns this order's reservations into real uses. One that can no longer be
-// redeemed fails the WHOLE confirm: the customer was quoted a price including the discount, so
-// confirming without it would overcharge them. Failing leaves the order a draft.
-func redeemOrderVouchers(
-	ctx corectx.Context, orderId string,
-) ([]string, *ft.ClientErrors, error) {
-	redemptions, err := searchBy(ctx,
-		models.SalesVoucherRedemptionSchemaName,
-		models.SalesVoucherRedemptionFieldSalesOrderId, orderId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	redeemed := make([]string, 0, len(redemptions))
-	for _, record := range redemptions {
-		status := stringOf(record, models.SalesVoucherRedemptionFieldStatus)
-		if status != string(models.VoucherRedemptionStatusReserved) {
-			// Already redeemed, released or reversed. Not this confirm's business: a released
-			// reservation was deliberately given back, and a redeemed one means a retry.
-			continue
-		}
-
-		redemptionId := stringOf(record, models.SalesVoucherRedemptionFieldId)
-		vErrs, err := SettleRedemption(ctx, redemptionId,
-			string(models.VoucherRedemptionStatusRedeemed))
-		if err != nil {
-			return nil, nil, err
-		}
-		if vErrs != nil {
-			// Reported as an exhausted voucher, and the confirm is abandoned with the order still a
-			// draft.
-			out := ft.NewClientErrors()
-			out.Append(*ft.NewBusinessViolation("voucher", ft.ErrorKey(ReasonVoucherExhausted, "sales"),
-				"a voucher applied to this order can no longer be redeemed; "+
-					"remove it and try again"))
-			return nil, out, nil
-		}
-		redeemed = append(redeemed,
-			stringOf(record, models.SalesVoucherRedemptionFieldVoucherCodeId))
-	}
-	return redeemed, nil, nil
-}
-
 // stampConfirmed moves the status and records when. Fulfilment status is derived here rather than
 // left at its default, which stops a fully-digital sale waiting forever on a warehouse.
 //
@@ -454,16 +424,33 @@ func redeemOrderVouchers(
 // rolled back is exactly the failure the outbox exists to prevent.
 func stampConfirmed(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
-	policy SalesPolicy, note string,
-) (billId string, err error) {
+	policy SalesPolicy, note string, quote *PromotionQuoteResult,
+) (billId string, promotions *ConfirmedPromotions, err error) {
 	err = withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
+		// Promotions first: an exhausted use refuses before the bill is raised, and every use taken
+		// and coupon issued rolls back with the confirm if anything later fails (BR-T04).
+		if promotions, err = commitPromotions(tranxCtx, record, quote, at); err != nil {
+			return err
+		}
 		billId, err = stampConfirmedInTranx(tranxCtx, orderId, record, at, policy, note)
 		return err
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return billId, nil
+	return billId, promotions, nil
+}
+
+// assertQuoteAccepted is BR-T02: a confirm whose fresh calculation differs from the accepted one is
+// refused with the fresh quote, the order stays a draft and nothing is consumed. An order never
+// quoted (no reference yet) has nothing to compare against.
+func assertQuoteAccepted(accepted string, quote *PromotionQuoteResult) *ft.ClientErrors {
+	if accepted == "" || quote == nil || accepted == quote.Reference {
+		return nil
+	}
+	return promotionRefusal("accepted_calculation_reference", PromotionErrRequoteRequired,
+		"the order's price or promotions changed since the quote was accepted; review and confirm again",
+		map[string]any{"quote": quote.View()})
 }
 
 func stampConfirmedInTranx(

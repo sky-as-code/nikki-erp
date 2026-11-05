@@ -104,7 +104,13 @@ func OnAppStarted() error {
 		logger logging.LoggerService,
 		sequences itExt.SequenceExtService,
 		orgSettings itExt.OrgSettingsReaderExtService,
+		promotionProducts itExt.ProductPromotionExtService,
+		uoms itExt.UomConversionExtService,
+		orgDefaults itExt.OrgDefaultsLookupExtService,
 	) error {
+		services.SetPromotionPorts(services.PromotionPorts{
+			Products: promotionProducts, Uoms: uoms, Currencies: orgDefaults,
+		})
 		services.SetDocumentNumbering(services.DocumentNumbering{Sequences: sequences, Settings: orgSettings})
 		// Warehouse-level holds for kiosk sales, and the protection of a paid order's holds after
 		// every settlement path. Both are package hooks for the same reason the outbox drain is.
@@ -175,15 +181,24 @@ func RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesPricelistItemSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesComboSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesComboComponentSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesPromotionProgramSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesPromotionConditionGroupSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesPromotionConditionSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesPromotionConditionTargetSchemaBuilder()),
+		// The promotion configuration registers after the channel, point and pricelist its scope
+		// junctions link; the order-side promotion records after the order and its lines.
+		dmodel.RegisterSchemaB(models.SalesPromotionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionChannelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionPointSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionPricelistSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionRuleSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionRuleProductSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionRuleCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesPromotionRewardSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesPromotionCompatibilitySchemaBuilder()),
-		// Vouchers register after the promotion program they point at.
-		dmodel.RegisterSchemaB(models.SalesVoucherCodeSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.SalesVoucherRedemptionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionRewardProductSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionRewardCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesVoucherSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesOrderVoucherSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesOrderPromotionSelectionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionApplicationSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPromotionAllocationSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesVoucherIssuanceSchemaBuilder()),
 		// Bills register after the order and its lines, which their edges point at.
 		dmodel.RegisterSchemaB(models.SalesBillSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesBillLineSchemaBuilder()),

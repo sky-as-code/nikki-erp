@@ -18,9 +18,9 @@ import (
 // operator can tell a basket that went stale from one somebody withdrew. Quotations are the other
 // way round because `expired` is already one of their states.
 //
-// Expiry MUST release what a stale draft has no right to keep: voucher reservations, which stop
-// another customer using a code, and stock reservations. Expiry that only changed a status would
-// leave the scarce things locked.
+// Expiry MUST release what a stale draft has no right to keep: its stock reservations. Expiry that
+// only changed a status would leave the scarce things locked. A draft holds no promotion or voucher
+// use (BR-V07), so there is nothing of those to give back.
 //
 // The cutoff is per organization, because draft_order_expiry_hours may be overridden and one
 // global cutoff would apply one organization's window to another's sales.
@@ -29,10 +29,6 @@ type ExpiryResult struct {
 	// Ids rather than counts, so a caller investigating why a basket vanished can find it.
 	ExpiredOrderIds     []string
 	ExpiredQuotationIds []string
-
-	// ReleasedVoucherCodeIds is separate because it has an effect outside this order: another
-	// customer can now use those codes.
-	ReleasedVoucherCodeIds []string
 }
 
 // ExpireStaleDrafts gives each order its own transaction and one failure does not stop the sweep:
@@ -49,13 +45,11 @@ func ExpireStaleDrafts(
 	for _, order := range drafts {
 		orderId := stringOf(order, models.SalesOrderFieldId)
 
-		released, err := expireOneOrder(ctx, order, now)
-		if err != nil {
+		if err := expireOneOrder(ctx, order, now); err != nil {
 			// Logged by the caller; the sweep moves on.
 			continue
 		}
 		result.ExpiredOrderIds = append(result.ExpiredOrderIds, orderId)
-		result.ReleasedVoucherCodeIds = append(result.ReleasedVoucherCodeIds, released...)
 	}
 	return result, nil
 }
@@ -95,25 +89,12 @@ func draftOrdersOlderThan(
 	return stale, nil
 }
 
-// expireOneOrder moves one draft to expired and releases what it was holding, in ONE transaction:
-// an order marked expired whose vouchers were not released would leave a code locked against a
-// sale that no longer exists, with nothing ever coming back to free it.
-func expireOneOrder(
-	ctx corectx.Context, order dmodel.DynamicFields, now time.Time,
-) ([]string, error) {
+// expireOneOrder moves one draft to expired, with its audit event, in ONE transaction.
+func expireOneOrder(ctx corectx.Context, order dmodel.DynamicFields, now time.Time) error {
 	orderId := stringOf(order, models.SalesOrderFieldId)
 	orgId := stringOf(order, basemodel.FieldOrgId)
 
-	var released []string
-	err := withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
-		// Vouchers first. If this fails the status move rolls back with it, so the order stays a
-		// draft and the next sweep tries again - an expired order with locked codes is worse.
-		codes, err := releaseOrderVouchers(tranxCtx, orderId)
-		if err != nil {
-			return err
-		}
-		released = codes
-
+	return withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
 		// Through the stage mechanism like every other status move, so a sweep that quietly cancels a
 		// basket announces it the same way an operator cancelling one does. A kiosk holding a stale
 		// draft learns it is gone.
@@ -138,16 +119,11 @@ func expireOneOrder(
 			Reason:       "draft expired without being confirmed",
 			OrgId:        orgId,
 			Metadata: map[string]any{
-				"expired_at":                  now.Unix(),
-				"expired_not_cancelled":       true,
-				"released_voucher_code_count": len(released),
+				"expired_at":            now.Unix(),
+				"expired_not_cancelled": true,
 			},
 		})
 	})
-	if err != nil {
-		return nil, err
-	}
-	return released, nil
 }
 
 // ExpireLapsedQuotations is driven by the quotation's OWN valid_until rather than the org window:

@@ -72,6 +72,7 @@ const (
 	OrgSettingOrderPublicReferenceSequenceId = "order_public_reference_sequence_id"
 	OrgSettingBillNumberSequenceId           = "bill_number_sequence_id"
 	OrgSettingReturnNumberSequenceId         = "return_number_sequence_id"
+	OrgSettingPromotionReferenceSequenceId   = "promotion_reference_sequence_id"
 )
 
 // SequenceIdSettings lists the settings holding a sequence definition id.
@@ -79,6 +80,7 @@ func SequenceIdSettings() []string {
 	return []string{
 		OrgSettingOrderNumberSequenceId, OrgSettingOrderPublicReferenceSequenceId,
 		OrgSettingBillNumberSequenceId, OrgSettingReturnNumberSequenceId,
+		OrgSettingPromotionReferenceSequenceId,
 	}
 }
 

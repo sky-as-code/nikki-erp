@@ -23,6 +23,9 @@ var internalSchemas = map[string]bool{
 	"sales_point_payment_rel":          true,
 	"sales_channel_fulfillment_method": true,
 	"sales_order_line_allocation":      true,
+	"sales_promotion_channel":          true,
+	"sales_promotion_point":            true,
+	"sales_promotion_pricelist":        true,
 }
 
 // Every registered schema is served by an engine, except the declared junctions. A schema with no

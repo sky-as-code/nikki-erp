@@ -3,73 +3,87 @@
 	"label": "sales_promotion_reward.label",
 	"table_name": "sales_promotion_rewards",
 	"should_build_db": true,
-	"default_search_fields": ["reward_type", "target_scope"],
-	"composite_uniques": [
-		{
-			"index_name": "sales_promo_rewards_tid_prog_seq",
-			"fields": ["sales_promotion_program_id", "sequence"]
-		}
-	],
+	"record_label_field": "order_description",
+	"default_search_fields": ["order_description"],
+	"search_indexes": [{ "index_name": "sls_promo_rewards_tid_promo", "fields": ["promotion_id"] }],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [
 		{
-			"name": "sales_promotion_program_id",
-			"label": "fields.sales_promotion_program_id",
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The program that grants this reward. Immutable: moving a reward between programs would change what two campaigns give away at once."
-			}
-		},
-		{
-			"name": "sequence",
-			"label": "fields.sequence",
-			"data_type": { "type": "int32", "min": 1, "max": 100000 },
-			"required_for_create": true,
-			"description": {
-				"en-US": "Application order within the program, unique per program. Unlike condition groups, order MATTERS here: rewards do not commute, so a percentage applied before a fixed amount gives a different total than the reverse."
-			}
+			"description": { "en-US": "The promotion granting this reward. Immutable." }
 		},
 		{
 			"name": "reward_type",
 			"label": "fields.reward_type",
-			"data_type": {
-				"type": "enum_string",
-				"values": [
-					"percentage_discount",
-					"fixed_amount_discount",
-					"fixed_product_price",
-					"free_quantity"
-				]
-			},
+			"data_type": { "type": "enum_string", "values": ["discount", "free_product", "free_shipping"] },
 			"required_for_create": true,
+			"required_fields": {
+				"discount": ["discount_method", "discount_value", "discount_scope"],
+				"free_product": ["gift_product_variant_id", "gift_quantity", "gift_uom_id"]
+			},
+			"optional_fields": {
+				"discount": ["max_discount_amount"],
+				"free_shipping": ["max_discount_amount"]
+			},
 			"description": {
-				"en-US": "What the customer gets (BR 24). free_quantity becomes a separate order line at zero price rather than an adjustment on the paid line (D-11), because Inventory must physically fulfil the free item and its VAT treatment is a line-level question — both need a real line."
+				"en-US": "What the customer receives (BR §5). buy_x_get_y allows free_product only. free_shipping is accepted but never applies: Sales has no shipping line (AC-39). Fields that do not belong to the type must be null (BR §8.5)."
 			}
 		},
 		{
-			"name": "value",
-			"label": "fields.value",
+			"name": "order_description",
+			"label": "fields.order_description",
+			"data_type": { "type": "string", "min": 1, "max": 500 },
+			"required_for_create": true,
+			"description": { "en-US": "What the customer sees on the order for this benefit." }
+		},
+		{
+			"name": "discount_method",
+			"label": "fields.discount_method",
+			"data_type": { "type": "enum_string", "values": ["percentage", "fixed_amount"] },
+			"description": { "en-US": "Discount only: a percentage of the base, or a fixed amount in the promotion's currency." }
+		},
+		{
+			"name": "discount_value",
+			"label": "fields.discount_value",
 			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 6 },
-			"required_for_create": true,
+			"description": { "en-US": "Discount only: the percentage (0-100) or the amount, per discount_method." }
+		},
+		{
+			"name": "discount_scope",
+			"label": "fields.discount_scope",
+			"data_type": { "type": "enum_string", "values": ["order", "specific_products", "cheapest_product"] },
 			"description": {
-				"en-US": "How much: a percentage for percentage_discount, an amount for fixed_amount_discount, a per-unit price for fixed_product_price, a count for free_quantity. Stored positive in every case — the direction is implied by the type, and a signed column would let a negative percentage express something nobody means. Scale 6 so a percentage can carry fractions."
+				"en-US": "Discount only: the whole order, the products this reward's selectors name (at least one selector required), or one unit of the cheapest eligible product (BR §5.1)."
 			}
 		},
 		{
-			"name": "target_scope",
-			"label": "fields.target_scope",
-			"data_type": {
-				"type": "enum_string",
-				"values": ["order", "line"]
-			},
-			"required_for_create": true,
-			"default_value": "order",
-			"description": {
-				"en-US": "Whether the reward applies to the whole order or to particular lines. An order-scoped discount is allocated down to the lines by the engine (D-05), so it appears once as an adjustment and again as each line's share — counting both would double it."
-			}
+			"name": "max_discount_amount",
+			"label": "fields.max_discount_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 6 },
+			"description": { "en-US": "Cap on the untaxed discount for discount and free_shipping; 0 or null means no cap." }
+		},
+		{
+			"name": "gift_product_variant_id",
+			"label": "fields.gift_product_variant_id",
+			"data_type": "ulid",
+			"description": { "en-US": "free_product only: the one variant given away, as a real zero-priced promotion_gift line (BR §5.2)." }
+		},
+		{
+			"name": "gift_quantity",
+			"label": "fields.gift_quantity",
+			"data_type": { "type": "decimal", "min": "0.000001", "max": "1000000000", "scale": 6 },
+			"description": { "en-US": "free_product only: units given per qualifying set, in gift_uom_id." }
+		},
+		{
+			"name": "gift_uom_id",
+			"label": "fields.gift_uom_id",
+			"data_type": "ulid",
+			"description": { "en-US": "free_product only: the unit gift_quantity is in, compatible with the gift variant's unit." }
 		}
 	],
 
@@ -81,12 +95,33 @@
 
 	"edges_to": [
 		{
-			"edge": "sales_promotion_program",
-			"label": { "en-US": "Promotion program" },
+			"edge": "promotion",
+			"label": { "en-US": "Promotion" },
 			"type": "many:one",
-			"dest_schema": "sales_promotion_program",
-			"key_map": { "sales_promotion_program_id": "id" },
+			"dest_schema": "sales_promotion",
+			"key_map": { "promotion_id": "id" },
 			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "gift_product_variant",
+			"label": { "en-US": "Gift product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "gift_product_variant_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "gift_uom",
+			"label": { "en-US": "Gift unit" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "gift_uom_id": "id" },
+			"on_delete": "RESTRICT"
 		}
+	],
+
+	"edges_from": [
+		{ "edge": "products", "label": { "en-US": "Products" }, "existing": { "src_schema": "sales_promotion_reward_product", "src_edge": "reward" } },
+		{ "edge": "categories", "label": { "en-US": "Categories" }, "existing": { "src_schema": "sales_promotion_reward_category", "src_edge": "reward" } }
 	]
 }

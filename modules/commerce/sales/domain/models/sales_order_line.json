@@ -42,12 +42,12 @@
 			"label": "fields.line_type",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["product", "combo", "promotion_reward"]
+				"values": ["product", "combo", "promotion_gift"]
 			},
 			"required_for_create": true,
 			"default_value": "product",
 			"description": {
-				"en-US": "What kind of thing this line is. A product line sells one variant. A combo line is the virtual parent of a bundle whose real variants live in sales_order_line_components, because Inventory fulfils real variants and never a virtual combo (BR 17). A promotion_reward line is a free item given by a promotion, which is a real line rather than an adjustment because Inventory must physically fulfil it and its VAT treatment is a line-level question (D-11). The fields each type requires are enforced by the domain service, not by required_for_create, because the schema cannot express a requirement conditional on another field."
+				"en-US": "What kind of thing this line is. A product line sells one variant. A combo line is the virtual parent of a bundle whose real variants live in sales_order_line_components, because Inventory fulfils real variants and never a virtual combo (BR 17). A promotion_gift line is a free item given by a promotion, which is a real line rather than an adjustment because Inventory must physically fulfil it and its VAT treatment is a line-level question (D-11). The fields each type requires are enforced by the domain service, not by required_for_create, because the schema cannot express a requirement conditional on another field."
 			}
 		},
 		{
@@ -56,7 +56,7 @@
 			"data_type": "ulid",
 			"no_update": true,
 			"description": {
-				"en-US": "What is being sold. The variant, not the template: the variant is the transactable unit. Nullable because a combo parent line sells no single variant — its components do. Required for product and promotion_reward lines, enforced by the domain service. A plain ulid, since the product belongs to Inventory."
+				"en-US": "What is being sold. The variant, not the template: the variant is the transactable unit. Nullable because a combo parent line sells no single variant — its components do. Required for product and promotion_gift lines, enforced by the domain service. A plain ulid, since the product belongs to Inventory."
 			}
 		},
 		{
@@ -150,7 +150,7 @@
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
-				"en-US": "The per-unit price actually charged, after price-level rules. Zero on a promotion_reward line, which is exactly what makes a free item expressible as a real line rather than as a discount that would have to be allocated back somewhere."
+				"en-US": "The per-unit price actually charged, after price-level rules. Zero on a promotion_gift line, which is exactly what makes a free item expressible as a real line rather than as a discount that would have to be allocated back somewhere."
 			}
 		},
 		{
@@ -227,11 +227,39 @@
 			}
 		},
 		{
-			"name": "source_promotion_program_id",
-			"label": "fields.source_promotion_program_id",
+			"name": "source_promotion_id",
+			"label": "fields.source_promotion_id",
 			"data_type": "ulid",
+			"metadata": { "server_assigned": true },
 			"description": {
-				"en-US": "The promotion that created this line, set on promotion_reward lines (D-11). Nullable everywhere else. It is what makes a free item traceable to the campaign that gave it away, which is the question asked when a campaign's cost is reviewed."
+				"en-US": "The promotion that created this line, set by repricing on promotion_gift lines (BR §8.9). Nullable everywhere else. A plain ulid with no edge: the line keeps explaining itself after the promotion is archived."
+			}
+		},
+		{
+			"name": "source_promotion_reward_id",
+			"label": "fields.source_promotion_reward_id",
+			"data_type": "ulid",
+			"metadata": { "server_assigned": true },
+			"description": {
+				"en-US": "The reward that created this gift line, the draft-time reference BR §8.9 asks for. Set by repricing only."
+			}
+		},
+		{
+			"name": "promotion_application_id",
+			"label": "fields.promotion_application_id",
+			"data_type": "ulid",
+			"metadata": { "server_assigned": true },
+			"description": {
+				"en-US": "The confirmed sales_promotion_application this gift line belongs to, stamped by Confirm (BR §8.9). Null while the order is a draft."
+			}
+		},
+		{
+			"name": "pricelist_id",
+			"label": "fields.pricelist_id",
+			"data_type": "ulid",
+			"metadata": { "server_assigned": true },
+			"description": {
+				"en-US": "The pricelist whose rule won this product line's price, recorded by repricing so a promotion limited to pricelists can tell which lines are eligible (D2). Null when the catalogue price applied."
 			}
 		},
 		{

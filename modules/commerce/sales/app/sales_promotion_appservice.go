@@ -1,413 +1,198 @@
 package app
 
 import (
-	"github.com/samber/lo"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
 	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-// The promotion and voucher application services. No custom actions: a discount is defined here
-// and applied by the order's apply_voucher, which lives on the order.
+// The promotion application services (BR §9.1, §9.4). Every action asserts its own permission on
+// the promotion; a child rule or reward also asserts update on the promotion it belongs to, so the
+// right to process orders never implies the right to change a promotion.
 
-func NewSalesPromotionProgramApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesPromotionProgramApplicationService {
-	return &SalesPromotionProgramApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
+func NewSalesPromotionApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itPromotion.SalesPromotionApplicationService {
+	return &SalesPromotionApplicationServiceImpl{
+		CrudApplicationService: base,
+		promotionSvc:           base.DomainService().(itPromotion.SalesPromotionDomainService),
+	}
 }
 
-type SalesPromotionProgramApplicationServiceImpl struct {
+type SalesPromotionApplicationServiceImpl struct {
 	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
+	promotionSvc itPromotion.SalesPromotionDomainService
 }
 
-func NewSalesPromotionConditionGroupApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesPromotionConditionGroupApplicationService {
-	return &SalesPromotionConditionGroupApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
+func (this *SalesPromotionApplicationServiceImpl) Activate(
+	ctx corectx.Context, cmd itPromotion.LifecycleCommand,
+) (*itPromotion.RecordResult, error) {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionActivate, cmd); cErrs != nil || err != nil {
+		return recordFailure(cErrs, err)
+	}
+	return this.promotionSvc.Activate(ctx, readStringParam(cmd, paramRecordId))
 }
 
-type SalesPromotionConditionGroupApplicationServiceImpl struct {
+func (this *SalesPromotionApplicationServiceImpl) Suspend(
+	ctx corectx.Context, cmd itPromotion.LifecycleCommand,
+) (*itPromotion.RecordResult, error) {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionSuspend, cmd); cErrs != nil || err != nil {
+		return recordFailure(cErrs, err)
+	}
+	return this.promotionSvc.Suspend(ctx, readStringParam(cmd, paramRecordId))
+}
+
+func (this *SalesPromotionApplicationServiceImpl) Duplicate(
+	ctx corectx.Context, cmd itPromotion.LifecycleCommand,
+) (*itPromotion.RecordResult, error) {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionDuplicatePromotion, cmd); cErrs != nil || err != nil {
+		return recordFailure(cErrs, err)
+	}
+	return this.promotionSvc.Duplicate(ctx, readStringParam(cmd, paramRecordId))
+}
+
+func (this *SalesPromotionApplicationServiceImpl) ManageChannels(
+	ctx corectx.Context, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	return this.manageScope(ctx, itPromotion.PromotionScopeChannels, cmd)
+}
+
+func (this *SalesPromotionApplicationServiceImpl) ManagePoints(
+	ctx corectx.Context, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	return this.manageScope(ctx, itPromotion.PromotionScopePoints, cmd)
+}
+
+func (this *SalesPromotionApplicationServiceImpl) ManagePricelists(
+	ctx corectx.Context, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	return this.manageScope(ctx, itPromotion.PromotionScopePricelists, cmd)
+}
+
+func (this *SalesPromotionApplicationServiceImpl) manageScope(
+	ctx corectx.Context, scope itPromotion.PromotionScope, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionManagePromotion, cmd); cErrs != nil || err != nil {
+		return mutateFailure(cErrs, err)
+	}
+	return this.promotionSvc.ManageScope(ctx, scope, cmd)
+}
+
+func recordFailure(cErrs *ft.ClientErrors, err error) (*itPromotion.RecordResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	return &itPromotion.RecordResult{ClientErrors: *cErrs}, nil
+}
+
+// promotionChildAppService is the authorized surface of a rule or a reward. The built-in CRUD
+// asserts the child's own permission; each write here also asserts update on the promotion.
+type promotionChildAppService struct {
 	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
-func NewSalesPromotionConditionApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesPromotionConditionApplicationService {
-	return &SalesPromotionConditionApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
+func (this *promotionChildAppService) Create(
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
+	orgId, cErrs := this.AssertAction(ctx, dynamicresource.PermissionCreate, cmd)
+	if cErrs == nil {
+		cErrs = assertPromotionUpdate(ctx, orgId)
+	}
+	if cErrs != nil {
+		return &dynamicresource.CreateResult{ClientErrors: *cErrs}, nil
+	}
+	return this.CrudApplicationService.Create(ctx, cmd)
 }
 
-type SalesPromotionConditionApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
+func (this *promotionChildAppService) Update(
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
+	if cErrs, err := this.assertParentUpdate(ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
+		return mutateFailure(cErrs, err)
+	}
+	return this.CrudApplicationService.Update(ctx, cmd)
 }
 
-func NewSalesPromotionConditionTargetApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesPromotionConditionTargetApplicationService {
-	return &SalesPromotionConditionTargetApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
+func (this *promotionChildAppService) Delete(
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
+	if cErrs, err := this.assertParentUpdate(ctx, dynamicresource.PermissionDelete, cmd); cErrs != nil || err != nil {
+		return mutateFailure(cErrs, err)
+	}
+	return this.CrudApplicationService.Delete(ctx, cmd)
 }
 
-type SalesPromotionConditionTargetApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
+// assertParentUpdate asserts the child's own action on the record, then update on the promotion.
+func (this *promotionChildAppService) assertParentUpdate(
+	ctx corectx.Context, action string, cmd dmodel.DynamicFields,
+) (*ft.ClientErrors, error) {
+	orgId, cErrs := this.AssertAction(ctx, action, cmd)
+	if cErrs != nil {
+		return cErrs, nil
+	}
+	if orgId != nil {
+		if cErrs, err := this.AssertRecordInOrg(ctx, cmd, *orgId); cErrs != nil || err != nil {
+			return cErrs, err
+		}
+	}
+	return assertPromotionUpdate(ctx, orgId), nil
+}
 
-	pricingChangedPub itEvent.PricingChangedEventPublisher
+func assertPromotionUpdate(ctx corectx.Context, orgId *model.Id) *ft.ClientErrors {
+	if orgId == nil {
+		return assertPermission(ctx, PermissionManagePromotion, c.SalesPromotionResource, c.ResourceScopeOrg)
+	}
+	return assertPermissionInOrg(ctx, PermissionManagePromotion, c.SalesPromotionResource,
+		c.ResourceScopeOrg, *orgId)
+}
+
+type selectorManager interface {
+	ManageProducts(ctx corectx.Context, cmd itPromotion.ManageCommand) (*itPromotion.ManageResult, error)
+	ManageCategories(ctx corectx.Context, cmd itPromotion.ManageCommand) (*itPromotion.ManageResult, error)
+}
+
+// promotionSelectorOwnerAppService adds the manage_products and manage_categories actions.
+type promotionSelectorOwnerAppService struct {
+	promotionChildAppService
+	selectors selectorManager
+}
+
+func (this *promotionSelectorOwnerAppService) ManageProducts(
+	ctx corectx.Context, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	if cErrs, err := this.assertParentUpdate(ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
+		return mutateFailure(cErrs, err)
+	}
+	return this.selectors.ManageProducts(ctx, cmd)
+}
+
+func (this *promotionSelectorOwnerAppService) ManageCategories(
+	ctx corectx.Context, cmd itPromotion.ManageCommand,
+) (*itPromotion.ManageResult, error) {
+	if cErrs, err := this.assertParentUpdate(ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
+		return mutateFailure(cErrs, err)
+	}
+	return this.selectors.ManageCategories(ctx, cmd)
+}
+
+func NewSalesPromotionRuleApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itPromotion.SalesPromotionRuleApplicationService {
+	return &promotionSelectorOwnerAppService{
+		promotionChildAppService: promotionChildAppService{CrudApplicationService: base},
+		selectors:                base.DomainService().(itPromotion.SalesPromotionRuleDomainService),
+	}
 }
 
 func NewSalesPromotionRewardApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService,
 ) itPromotion.SalesPromotionRewardApplicationService {
-	return &SalesPromotionRewardApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
-}
-
-type SalesPromotionRewardApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
-}
-
-func NewSalesPromotionCompatibilityApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesPromotionCompatibilityApplicationService {
-	return &SalesPromotionCompatibilityApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
-}
-
-type SalesPromotionCompatibilityApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
-}
-
-func NewSalesVoucherCodeApplicationService(
-	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
-) itPromotion.SalesVoucherCodeApplicationService {
-	return &SalesVoucherCodeApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
-}
-
-type SalesVoucherCodeApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
-
-	pricingChangedPub itEvent.PricingChangedEventPublisher
-}
-
-func NewSalesVoucherRedemptionApplicationService(base dynamicresource.CrudApplicationService) itPromotion.SalesVoucherRedemptionApplicationService {
-	return &SalesVoucherRedemptionApplicationServiceImpl{CrudApplicationService: base}
-}
-
-type SalesVoucherRedemptionApplicationServiceImpl struct {
-	dynamicresource.CrudApplicationService
-}
-
-func (this *SalesPromotionProgramApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
+	return &promotionSelectorOwnerAppService{
+		promotionChildAppService: promotionChildAppService{CrudApplicationService: base},
+		selectors:                base.DomainService().(itPromotion.SalesPromotionRewardDomainService),
 	}
-
-	return res, err
-}
-
-func (this *SalesPromotionProgramApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionProgramApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionProgramApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionGroupApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionGroupApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionGroupApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionGroupApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionTargetApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionTargetApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionTargetApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionConditionTargetApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionRewardApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionRewardApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionRewardApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionRewardApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionCompatibilityApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionCompatibilityApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionCompatibilityApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesPromotionCompatibilityApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesVoucherCodeApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd dynamicresource.CreateCommand,
-) (*dynamicresource.CreateResult, error) {
-	res, err := this.CrudApplicationService.Create(ctx, cmd)
-	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesVoucherCodeApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Update(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesVoucherCodeApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.Delete(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
-}
-
-func (this *SalesVoucherCodeApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
-) (*dynamicresource.MutateResult, error) {
-	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
-	if err == nil && res.ClientErrors.Count() == 0 {
-		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
-	}
-
-	return res, err
 }

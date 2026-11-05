@@ -10,4 +10,7 @@ const (
 	SalesChannelResource = models.SalesChannelSchemaName
 	SalesPointResource   = models.SalesPointSchemaName
 	SalesOrderResource   = models.SalesOrderSchemaName
+
+	SalesPromotionResource = models.SalesPromotionSchemaName
+	SalesVoucherResource   = models.SalesVoucherSchemaName
 )

@@ -66,17 +66,8 @@ type PricingRuleSet struct {
 	Combos          []models.SalesCombo
 	ComboComponents []models.SalesComboComponent
 
-	Programs                []models.SalesPromotionProgram
-	ProgramConditionGroups  []models.SalesPromotionConditionGroup
-	ProgramConditions       []models.SalesPromotionCondition
-	ProgramConditionTargets []models.SalesPromotionConditionTarget
-	ProgramRewards          []models.SalesPromotionReward
-	ProgramCompatibilities  []models.SalesPromotionCompatibility
-
-	// VoucherCodes name which program a code unlocks, nothing more. Whether a code is still
-	// spendable is live state the server answers at settlement: a caller deciding it from the
-	// stored usage_count would honour a code somebody else had already spent.
-	VoucherCodes []models.SalesVoucherCode
+	// No promotion travels: Sales prices, confirms and cancels every kiosk order itself, so a
+	// device never evaluates a promotion or a voucher (PROMO-013).
 }
 
 // NewPricingRuleSet returns the empty set with every slice allocated, so a caller marshalling it
@@ -84,16 +75,9 @@ type PricingRuleSet struct {
 // field was not sent".
 func NewPricingRuleSet() PricingRuleSet {
 	return PricingRuleSet{
-		Pricelists:              []models.SalesPricelist{},
-		PricelistItems:          []models.SalesPricelistItem{},
-		Combos:                  []models.SalesCombo{},
-		ComboComponents:         []models.SalesComboComponent{},
-		Programs:                []models.SalesPromotionProgram{},
-		ProgramConditionGroups:  []models.SalesPromotionConditionGroup{},
-		ProgramConditions:       []models.SalesPromotionCondition{},
-		ProgramConditionTargets: []models.SalesPromotionConditionTarget{},
-		ProgramRewards:          []models.SalesPromotionReward{},
-		ProgramCompatibilities:  []models.SalesPromotionCompatibility{},
-		VoucherCodes:            []models.SalesVoucherCode{},
+		Pricelists:      []models.SalesPricelist{},
+		PricelistItems:  []models.SalesPricelistItem{},
+		Combos:          []models.SalesCombo{},
+		ComboComponents: []models.SalesComboComponent{},
 	}
 }

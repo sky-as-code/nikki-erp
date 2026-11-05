@@ -1,0 +1,679 @@
+{
+	"name": "sales_voucher",
+	"label": "sales_voucher.label",
+	"table_name": "sales_vouchers",
+	"should_build_db": true,
+	"record_label_field": "code",
+	"default_search_fields": [
+		"code",
+		"normalized_code"
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sls_vouchers_tid_org_ncode",
+			"fields": [
+				"org_id",
+				"normalized_code"
+			]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_vouchers_tid_promo",
+			"fields": [
+				"promotion_id"
+			]
+		},
+		{
+			"index_name": "sls_vouchers_tid_src_order",
+			"fields": [
+				"source_order_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The promotion this code unlocks (BR-V01). Only discount_code, coupon and next_order_coupon promotions take vouchers. Immutable."
+			}
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 64
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The code as entered or generated. Compared only through normalized_code (BR-V03). Immutable; never written to logs."
+			}
+		},
+		{
+			"name": "normalized_code",
+			"label": "fields.normalized_code",
+			"data_type": {
+				"type": "resource_code",
+				"min": 6,
+				"max": 32
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "The code trimmed and uppercased, 6-32 of A-Z, 0-9 and '-'; unique within the org including archived and revoked vouchers (BR-V03). Server-assigned."
+			}
+		},
+		{
+			"name": "voucher_type",
+			"label": "fields.voucher_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"reusable",
+					"single_use"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Derived from the promotion type at creation: reusable for discount_code, single_use for coupon and next_order_coupon (BR-V02). Immutable, server-assigned."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"active",
+					"revoked"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"metadata": {
+				"track_history": true,
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "active or revoked; revoke is terminal (BR-L03). Not started, expired and exhausted are derived (BR-V05)."
+			}
+		},
+		{
+			"name": "customer_id",
+			"label": "fields.customer_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The one customer (party) allowed to use the code; null for an unnamed code (BR-V04). Read-only after creation."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "Inclusive start of the voucher's own window, intersected with the promotion's (BR-V05)."
+			}
+		},
+		{
+			"name": "expires_at",
+			"label": "fields.expires_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "Exclusive end of the voucher's own window."
+			}
+		},
+		{
+			"name": "usage_limit",
+			"label": "fields.usage_limit",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000000
+			},
+			"description": {
+				"en-US": "Uses allowed; null is unlimited for a reusable code, always 1 for single_use (BR-V02)."
+			}
+		},
+		{
+			"name": "used_count",
+			"label": "fields.used_count",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000000
+			},
+			"default_value": "0",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Confirmed applications using this code: the physical counter Confirm increments atomically (D5). Server-only."
+			}
+		},
+		{
+			"name": "source_order_id",
+			"label": "fields.source_order_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "The order whose confirmation issued this next_order_coupon (BR-V09). Set by the issuing flow only; a client value is ignored (BR 9.2)."
+			}
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "When the voucher was issued. Server-assigned."
+			}
+		},
+		{
+			"name": "revoked_at",
+			"label": "fields.revoked_at",
+			"data_type": "datetime",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "When it was revoked. Server-assigned."
+			}
+		},
+		{
+			"name": "revoked_by",
+			"label": "fields.revoked_by",
+			"data_type": "ulid",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Who revoked it: a user, or null for the system when the source order was cancelled. Server-assigned."
+			}
+		},
+		{
+			"name": "revocation_reason",
+			"label": "fields.revocation_reason",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"manual",
+					"source_order_cancelled"
+				]
+			},
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "Why it was revoked (BR-L03, BR-V12). Server-assigned."
+			}
+		},
+		{
+			"name": "revocation_note",
+			"label": "fields.revocation_note",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 500
+			},
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "The operator's note given with a manual revoke."
+			}
+		},
+		{
+			"name": "promotion_status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"draft",
+					"active",
+					"suspended"
+				]
+			},
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.status"
+			},
+			"description": {
+				"en-US": "The promotion's status, read through the edge for availability."
+			}
+		},
+		{
+			"name": "promotion_is_archived",
+			"label": "fields.is_archived",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.is_archived"
+			},
+			"description": {
+				"en-US": "The promotion's is_archived, read through the edge for availability."
+			}
+		},
+		{
+			"name": "promotion_starts_at",
+			"label": "fields.starts_at",
+			"data_type": "datetime",
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.starts_at"
+			},
+			"description": {
+				"en-US": "The promotion's starts_at, read through the edge for availability."
+			}
+		},
+		{
+			"name": "promotion_ends_at",
+			"label": "fields.ends_at",
+			"data_type": "datetime",
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.ends_at"
+			},
+			"description": {
+				"en-US": "The promotion's ends_at, read through the edge for availability."
+			}
+		},
+		{
+			"name": "promotion_usage_limit",
+			"label": "fields.usage_limit",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000000
+			},
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.usage_limit"
+			},
+			"description": {
+				"en-US": "The promotion's usage_limit, read through the edge for availability."
+			}
+		},
+		{
+			"name": "promotion_used_count",
+			"label": "fields.used_count",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000000
+			},
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "promotion.used_count"
+			},
+			"description": {
+				"en-US": "The promotion's used_count, read through the edge for availability."
+			}
+		},
+		{
+			"name": "availability",
+			"label": "fields.availability",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"archived",
+					"revoked",
+					"promotion_unavailable",
+					"not_started",
+					"expired",
+					"exhausted",
+					"available"
+				]
+			},
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"case": {
+						"when": [
+							{
+								"if": {
+									"op": "eq",
+									"args": [
+										{
+											"field": "is_archived"
+										},
+										{
+											"value": true
+										}
+									]
+								},
+								"then": {
+									"value": "archived"
+								}
+							},
+							{
+								"if": {
+									"op": "eq",
+									"args": [
+										{
+											"field": "status"
+										},
+										{
+											"value": "revoked"
+										}
+									]
+								},
+								"then": {
+									"value": "revoked"
+								}
+							},
+							{
+								"if": {
+									"op": "or",
+									"args": [
+										{
+											"op": "eq",
+											"args": [
+												{
+													"field": "promotion_is_archived"
+												},
+												{
+													"value": true
+												}
+											]
+										},
+										{
+											"op": "not",
+											"args": [
+												{
+													"op": "eq",
+													"args": [
+														{
+															"field": "promotion_status"
+														},
+														{
+															"value": "active"
+														}
+													]
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "promotion_unavailable"
+								}
+							},
+							{
+								"if": {
+									"op": "or",
+									"args": [
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "valid_from"
+														}
+													]
+												},
+												{
+													"op": "gt",
+													"args": [
+														{
+															"field": "valid_from"
+														},
+														{
+															"function": "now"
+														}
+													]
+												}
+											]
+										},
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "promotion_starts_at"
+														}
+													]
+												},
+												{
+													"op": "gt",
+													"args": [
+														{
+															"field": "promotion_starts_at"
+														},
+														{
+															"function": "now"
+														}
+													]
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "not_started"
+								}
+							},
+							{
+								"if": {
+									"op": "or",
+									"args": [
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "expires_at"
+														}
+													]
+												},
+												{
+													"op": "lte",
+													"args": [
+														{
+															"field": "expires_at"
+														},
+														{
+															"function": "now"
+														}
+													]
+												}
+											]
+										},
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "promotion_ends_at"
+														}
+													]
+												},
+												{
+													"op": "lte",
+													"args": [
+														{
+															"field": "promotion_ends_at"
+														},
+														{
+															"function": "now"
+														}
+													]
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "expired"
+								}
+							},
+							{
+								"if": {
+									"op": "or",
+									"args": [
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "usage_limit"
+														}
+													]
+												},
+												{
+													"op": "gte",
+													"args": [
+														{
+															"function": "coalesce",
+															"args": [
+																{
+																	"field": "used_count"
+																},
+																{
+																	"value": 0
+																}
+															]
+														},
+														{
+															"field": "usage_limit"
+														}
+													]
+												}
+											]
+										},
+										{
+											"op": "and",
+											"args": [
+												{
+													"op": "is_not_null",
+													"args": [
+														{
+															"field": "promotion_usage_limit"
+														}
+													]
+												},
+												{
+													"op": "gte",
+													"args": [
+														{
+															"function": "coalesce",
+															"args": [
+																{
+																	"field": "promotion_used_count"
+																},
+																{
+																	"value": 0
+																}
+															]
+														},
+														{
+															"field": "promotion_usage_limit"
+														}
+													]
+												}
+											]
+										}
+									]
+								},
+								"then": {
+									"value": "exhausted"
+								}
+							}
+						],
+						"else": {
+							"value": "available"
+						}
+					}
+				}
+			},
+			"description": {
+				"en-US": "Whether the code can be used now, in priority order archived, revoked, promotion_unavailable (promotion archived or not active), not_started, expired, exhausted, available. The window is the intersection of the voucher's and the promotion's (BR-V05); nothing is updated by a job."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
+		"core.basemodel.versioned_model"
+	],
+	"edges_to": [
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "customer",
+			"label": {
+				"en-US": "Customer"
+			},
+			"type": "many:one",
+			"dest_schema": "contacts_party",
+			"key_map": {
+				"customer_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "source_order",
+			"label": {
+				"en-US": "Source order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"source_order_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	]
+}

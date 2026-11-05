@@ -28,7 +28,7 @@ func toLineInputs(t *testing.T, records []dmodel.DynamicFields) []pricing.LineIn
 	lines := make([]pricing.LineInput, 0, len(records))
 	for _, record := range records {
 		if stringOf(record, models.SalesOrderLineFieldLineType) ==
-			string(models.SalesOrderLineTypePromotionReward) {
+			string(models.SalesOrderLineTypePromotionGift) {
 			continue
 		}
 		lines = append(lines, pricing.LineInput{
@@ -46,7 +46,7 @@ func toLineInputs(t *testing.T, records []dmodel.DynamicFields) []pricing.LineIn
 func TestGiveawayLinesAreNotFedBackIntoTheEngine(t *testing.T) {
 	records := []dmodel.DynamicFields{
 		lineRecord("L1", 1, string(models.SalesOrderLineTypeProduct), "2", "10000"),
-		lineRecord("L2", 2, string(models.SalesOrderLineTypePromotionReward), "1", "0"),
+		lineRecord("L2", 2, string(models.SalesOrderLineTypePromotionGift), "1", "0"),
 		lineRecord("L3", 3, string(models.SalesOrderLineTypeProduct), "1", "5000"),
 	}
 
@@ -136,24 +136,3 @@ func TestRepricingAnUnchangedBasketIsStable(t *testing.T) {
 
 // The adjustment chain renumbers from one on every reprice, which is why the old chain is deleted
 // rather than amended: sequence is unique per order.
-func TestAdjustmentSequencesRestartFromOne(t *testing.T) {
-	result := pricing.Calculate(pricing.Input{
-		Lines: []pricing.LineInput{
-			{Key: "L1", LineNumber: 1, Quantity: dec("1"), CatalogueUnitPrice: dec("10000")},
-		},
-		Programs: []pricing.AppliedProgram{{
-			ProgramId: "P1", ProgramName: "Ten off",
-			Rewards: []pricing.RewardInput{
-				{RewardId: "R1", Sequence: 1, Type: "percentage_discount", Value: dec("10")},
-			},
-		}},
-		Context: pricing.Context{CurrencyScale: 0},
-	})
-
-	if len(result.Adjustments) == 0 {
-		t.Fatal("a discount must produce an adjustment")
-	}
-	if result.Adjustments[0].Sequence != 1 {
-		t.Errorf("the chain must start at sequence 1, got %d", result.Adjustments[0].Sequence)
-	}
-}

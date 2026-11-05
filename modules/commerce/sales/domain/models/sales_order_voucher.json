@@ -1,0 +1,120 @@
+{
+	"name": "sales_order_voucher",
+	"label": "sales_order_voucher.label",
+	"table_name": "sales_order_vouchers",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sls_ord_vouchers_tid_order_promo",
+			"fields": [
+				"order_id",
+				"promotion_id"
+			]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_ord_vouchers_tid_voucher",
+			"fields": [
+				"voucher_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The draft order the code was entered on."
+			}
+		},
+		{
+			"name": "voucher_id",
+			"label": "fields.voucher_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The voucher attached. Holds no use: nothing is consumed until Confirm (BR-V07)."
+			}
+		},
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The voucher's promotion; one attached code per promotion per order."
+			}
+		},
+		{
+			"name": "attached_at",
+			"label": "fields.attached_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When the code was attached."
+			}
+		},
+		{
+			"name": "attached_by",
+			"label": "fields.attached_by",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Who attached it."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": {
+				"en-US": "Order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"order_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "voucher",
+			"label": {
+				"en-US": "Voucher"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_voucher",
+			"key_map": {
+				"voucher_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	]
+}

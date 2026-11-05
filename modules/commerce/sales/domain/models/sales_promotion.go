@@ -3,200 +3,196 @@ package models
 import (
 	_ "embed"
 
-	"github.com/shopspring/decimal"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The promotion schemas. One engine serves automatic promotions, conditional bundle pricing and
-// vouchers: the difference between them is data, not code — an automatic program and a voucher
-// program differ only in activation_type.
+// The promotion configuration (BR §8.2-§8.6): the promotion itself, its channel/point/pricelist
+// scope, its rules and rewards, and the product and category selectors those narrow by. Every
+// child is configuration of the promotion: a write to one bumps the promotion's config_version and
+// is refused while the promotion is active (BR-L02).
 
 const (
-	SalesPromotionProgramSchemaName = "sales_promotion_program"
+	SalesPromotionSchemaName = "sales_promotion"
 
-	SalesPromotionProgramFieldId                    = "id"
-	SalesPromotionProgramFieldOrgId                 = "org_id"
-	SalesPromotionProgramFieldCode                  = "code"
-	SalesPromotionProgramFieldName                  = "name"
-	SalesPromotionProgramFieldActivationType        = "activation_type"
-	SalesPromotionProgramFieldPriority              = "priority"
-	SalesPromotionProgramFieldValidFrom             = "valid_from"
-	SalesPromotionProgramFieldValidUntil            = "valid_until"
-	SalesPromotionProgramFieldStackPolicy           = "stack_policy"
-	SalesPromotionProgramFieldExclusiveGroup        = "exclusive_group"
-	SalesPromotionProgramFieldUsageLimit            = "usage_limit"
-	SalesPromotionProgramFieldUsageLimitPerCustomer = "usage_limit_per_customer"
-	SalesPromotionProgramFieldReturnBehavior        = "return_behavior"
-	SalesPromotionProgramFieldRestoreOnFullReturn   = "restore_on_full_return"
-	SalesPromotionProgramFieldRestoreOnPartialRet   = "restore_on_partial_return"
+	SalesPromotionFieldId                      = basemodel.FieldId
+	SalesPromotionFieldOrgId                   = basemodel.FieldOrgId
+	SalesPromotionFieldReference               = "reference"
+	SalesPromotionFieldName                    = "name"
+	SalesPromotionFieldDescription             = "description"
+	SalesPromotionFieldProgramType             = "program_type"
+	SalesPromotionFieldStatus                  = "status"
+	SalesPromotionFieldCurrencyId              = "currency_id"
+	SalesPromotionFieldStartsAt                = "starts_at"
+	SalesPromotionFieldEndsAt                  = "ends_at"
+	SalesPromotionFieldUsageLimit              = "usage_limit"
+	SalesPromotionFieldUsedCount               = "used_count"
+	SalesPromotionFieldSequence                = "sequence"
+	SalesPromotionFieldNextVoucherValidityDays = "next_voucher_validity_days"
+	SalesPromotionFieldConfigVersion           = "config_version"
+
+	SalesPromotionEdgeSalesChannels   = "sales_channels"
+	SalesPromotionEdgeSalesPoints     = "sales_points"
+	SalesPromotionEdgeSalesPricelists = "sales_pricelists"
+)
+
+// The scope junctions. Written only through the promotion's manage_* actions (crud.ManageM2m over
+// the many:many edges above); they carry no org_id because the promotion they hang off is org-scoped.
+const (
+	SalesPromotionChannelSchemaName       = "sales_promotion_channel"
+	SalesPromotionChannelFieldPromotionId = "promotion_id"
+	SalesPromotionChannelFieldChannelId   = "sales_channel_id"
+
+	SalesPromotionPointSchemaName       = "sales_promotion_point"
+	SalesPromotionPointFieldPromotionId = "promotion_id"
+	SalesPromotionPointFieldPointId     = "sales_point_id"
+
+	SalesPromotionPricelistSchemaName       = "sales_promotion_pricelist"
+	SalesPromotionPricelistFieldPromotionId = "promotion_id"
+	SalesPromotionPricelistFieldPricelistId = "sales_pricelist_id"
 )
 
 const (
-	SalesPromotionConditionGroupSchemaName = "sales_promotion_condition_group"
+	SalesPromotionRuleSchemaName = "sales_promotion_rule"
 
-	SalesPromotionConditionGroupFieldId        = "id"
-	SalesPromotionConditionGroupFieldProgramId = "sales_promotion_program_id"
-	SalesPromotionConditionGroupFieldSequence  = "sequence"
-)
-
-const (
-	SalesPromotionConditionSchemaName = "sales_promotion_condition"
-
-	SalesPromotionConditionFieldId            = "id"
-	SalesPromotionConditionFieldGroupId       = "group_id"
-	SalesPromotionConditionFieldConditionType = "condition_type"
-	SalesPromotionConditionFieldOperator      = "operator"
-	SalesPromotionConditionFieldValueText     = "value_text"
-	SalesPromotionConditionFieldValueDecimal  = "value_decimal"
-	SalesPromotionConditionFieldValueFrom     = "value_from"
-	SalesPromotionConditionFieldValueTo       = "value_to"
-)
-
-const (
-	SalesPromotionConditionTargetSchemaName = "sales_promotion_condition_target"
-
-	SalesPromotionConditionTargetFieldId          = "id"
-	SalesPromotionConditionTargetFieldConditionId = "condition_id"
-	SalesPromotionConditionTargetFieldTargetType  = "target_type"
-	SalesPromotionConditionTargetFieldTargetId    = "target_id"
+	SalesPromotionRuleFieldId                 = basemodel.FieldId
+	SalesPromotionRuleFieldPromotionId        = "promotion_id"
+	SalesPromotionRuleFieldPhase              = "phase"
+	SalesPromotionRuleFieldName               = "name"
+	SalesPromotionRuleFieldMinQuantity        = "min_quantity"
+	SalesPromotionRuleFieldQualificationUomId = "qualification_uom_id"
+	SalesPromotionRuleFieldMinAmount          = "min_amount"
+	SalesPromotionRuleFieldAmountTaxBasis     = "amount_tax_basis"
 )
 
 const (
 	SalesPromotionRewardSchemaName = "sales_promotion_reward"
 
-	SalesPromotionRewardFieldId          = "id"
-	SalesPromotionRewardFieldProgramId   = "sales_promotion_program_id"
-	SalesPromotionRewardFieldSequence    = "sequence"
-	SalesPromotionRewardFieldRewardType  = "reward_type"
-	SalesPromotionRewardFieldValue       = "value"
-	SalesPromotionRewardFieldTargetScope = "target_scope"
+	SalesPromotionRewardFieldId                   = basemodel.FieldId
+	SalesPromotionRewardFieldPromotionId          = "promotion_id"
+	SalesPromotionRewardFieldRewardType           = "reward_type"
+	SalesPromotionRewardFieldOrderDescription     = "order_description"
+	SalesPromotionRewardFieldDiscountMethod       = "discount_method"
+	SalesPromotionRewardFieldDiscountValue        = "discount_value"
+	SalesPromotionRewardFieldDiscountScope        = "discount_scope"
+	SalesPromotionRewardFieldMaxDiscountAmount    = "max_discount_amount"
+	SalesPromotionRewardFieldGiftProductVariantId = "gift_product_variant_id"
+	SalesPromotionRewardFieldGiftQuantity         = "gift_quantity"
+	SalesPromotionRewardFieldGiftUomId            = "gift_uom_id"
 )
+
+// The selectors. A product selector names a template or a variant, never both; a category selector
+// matches the category and its descendants (BR-C03).
+const (
+	SalesPromotionRuleProductSchemaName    = "sales_promotion_rule_product"
+	SalesPromotionRuleCategorySchemaName   = "sales_promotion_rule_category"
+	SalesPromotionRewardProductSchemaName  = "sales_promotion_reward_product"
+	SalesPromotionRewardCategorySchemaName = "sales_promotion_reward_category"
+	SalesPromotionSelectorFieldRuleId      = "rule_id"
+	SalesPromotionSelectorFieldRewardId    = "reward_id"
+	SalesPromotionSelectorFieldTemplateId  = "product_template_id"
+	SalesPromotionSelectorFieldVariantId   = "product_variant_id"
+	SalesPromotionSelectorFieldCategoryId  = "category_id"
+)
+
+// PromotionProgramType is how a promotion is triggered and computed (BR §3.1).
+type PromotionProgramType string
 
 const (
-	SalesPromotionCompatibilitySchemaName = "sales_promotion_compatibility"
-
-	SalesPromotionCompatibilityFieldId            = "id"
-	SalesPromotionCompatibilityFieldProgramAId    = "program_a_id"
-	SalesPromotionCompatibilityFieldProgramBId    = "program_b_id"
-	SalesPromotionCompatibilityFieldCompatibility = "compatibility"
+	PromotionTypeAutomatic       = PromotionProgramType("automatic")
+	PromotionTypeDiscountCode    = PromotionProgramType("discount_code")
+	PromotionTypeCoupon          = PromotionProgramType("coupon")
+	PromotionTypeBuyXGetY        = PromotionProgramType("buy_x_get_y")
+	PromotionTypeNextOrderCoupon = PromotionProgramType("next_order_coupon")
 )
 
-// PromotionActivationType is how a program comes into play.
-type PromotionActivationType string
+// TakesVouchers reports whether a promotion of this type is unlocked by a voucher (BR-V01).
+func (this PromotionProgramType) TakesVouchers() bool {
+	return this == PromotionTypeDiscountCode || this == PromotionTypeCoupon ||
+		this == PromotionTypeNextOrderCoupon
+}
+
+// PromotionStatus is the business lifecycle (BR-L01); expired and exhausted are derived.
+type PromotionStatus string
 
 const (
-	// PromotionActivationAutomatic applies whenever its conditions hold.
-	PromotionActivationAutomatic = PromotionActivationType("automatic")
-	// PromotionActivationVoucherCode applies only when the customer presents a code.
-	PromotionActivationVoucherCode = PromotionActivationType("voucher_code")
+	PromotionStatusDraft     = PromotionStatus("draft")
+	PromotionStatusActive    = PromotionStatus("active")
+	PromotionStatusSuspended = PromotionStatus("suspended")
 )
 
-// PromotionStackPolicy is how a program combines with others. It is the fallback used only when no
-// explicit compatibility row decides.
-type PromotionStackPolicy string
+// PromotionRulePhase says which order a rule qualifies (BR-V08).
+type PromotionRulePhase string
 
 const (
-	PromotionStackStackable = PromotionStackPolicy("stackable")
-	// PromotionStackExclusive applies alone on the order.
-	PromotionStackExclusive = PromotionStackPolicy("exclusive")
-	// PromotionStackExclusiveWithinGroup excludes only programs sharing its exclusive_group.
-	PromotionStackExclusiveWithinGroup = PromotionStackPolicy("exclusive_within_group")
+	PromotionRulePhaseApply = PromotionRulePhase("apply")
+	PromotionRulePhaseIssue = PromotionRulePhase("issue")
 )
 
-// PromotionCompatibility is an explicit pairwise directive, which outranks the stack policy.
-type PromotionCompatibility string
-
-const (
-	PromotionCompatibilityAllowed = PromotionCompatibility("allowed")
-	// PromotionCompatibilityDenied wins over everything, always.
-	PromotionCompatibilityDenied = PromotionCompatibility("denied")
-)
-
-// PromotionRewardType is what the customer gets.
+// PromotionRewardType is what the customer receives (BR §5).
 type PromotionRewardType string
 
 const (
-	PromotionRewardPercentageDiscount  = PromotionRewardType("percentage_discount")
-	PromotionRewardFixedAmountDiscount = PromotionRewardType("fixed_amount_discount")
-	PromotionRewardFixedProductPrice   = PromotionRewardType("fixed_product_price")
-	// PromotionRewardFreeQuantity becomes a separate order line at zero price, because Inventory
-	// must physically fulfil the free item.
-	PromotionRewardFreeQuantity = PromotionRewardType("free_quantity")
+	PromotionRewardDiscount     = PromotionRewardType("discount")
+	PromotionRewardFreeProduct  = PromotionRewardType("free_product")
+	PromotionRewardFreeShipping = PromotionRewardType("free_shipping")
 )
-
-// PromotionReturnBehavior is what happens to a discount when part of the order comes back.
-type PromotionReturnBehavior string
 
 const (
-	PromotionReturnPreserveOriginal = PromotionReturnBehavior("preserve_original_discount")
-	// PromotionReturnRevalidate re-runs the engine over the remaining basket and reclaims the
-	// difference as a clawback adjustment.
-	PromotionReturnRevalidate = PromotionReturnBehavior("revalidate_and_clawback")
+	PromotionDiscountScopeOrder            = "order"
+	PromotionDiscountScopeSpecificProducts = "specific_products"
+	PromotionDiscountScopeCheapestProduct  = "cheapest_product"
 )
 
-// PromotionConditionType is what a condition tests. Customer and customer group are deliberately
-// absent: an enum value nothing evaluates reads as a supported feature that silently never matches.
-type PromotionConditionType string
+//go:embed sales_promotion.json
+var salesPromotionSchemaJson string
 
-const (
-	PromotionConditionProductVariant  = PromotionConditionType("product_variant")
-	PromotionConditionProductCategory = PromotionConditionType("product_category")
-	PromotionConditionQuantity        = PromotionConditionType("quantity")
-	PromotionConditionOrderSubtotal   = PromotionConditionType("order_subtotal")
-	PromotionConditionTotalQuantity   = PromotionConditionType("total_quantity")
-	PromotionConditionValidFrom       = PromotionConditionType("valid_from")
-	PromotionConditionValidUntil      = PromotionConditionType("valid_until")
-	PromotionConditionDayOfWeek       = PromotionConditionType("day_of_week")
-	PromotionConditionTimeOfDay       = PromotionConditionType("time_of_day")
-	PromotionConditionSalesChannel    = PromotionConditionType("sales_channel")
-	PromotionConditionSalesPoint      = PromotionConditionType("sales_point")
-)
-
-// PromotionOperator is how a condition compares.
-type PromotionOperator string
-
-const (
-	PromotionOperatorEq      = PromotionOperator("eq")
-	PromotionOperatorNe      = PromotionOperator("ne")
-	PromotionOperatorGt      = PromotionOperator("gt")
-	PromotionOperatorGte     = PromotionOperator("gte")
-	PromotionOperatorLt      = PromotionOperator("lt")
-	PromotionOperatorLte     = PromotionOperator("lte")
-	PromotionOperatorIn      = PromotionOperator("in")
-	PromotionOperatorNotIn   = PromotionOperator("not_in")
-	PromotionOperatorBetween = PromotionOperator("between")
-)
-
-//go:embed sales_promotion_program.json
-var salesPromotionProgramSchemaJson string
-
-func SalesPromotionProgramSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.ParseModelJson(salesPromotionProgramSchemaJson)
+func SalesPromotionSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionSchemaJson)
 }
 
-//go:embed sales_promotion_condition_group.json
-var salesPromotionConditionGroupSchemaJson string
+//go:embed sales_promotion_channel.json
+var salesPromotionChannelSchemaJson string
 
-func SalesPromotionConditionGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.ParseModelJson(salesPromotionConditionGroupSchemaJson)
+func SalesPromotionChannelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionChannelSchemaJson)
 }
 
-//go:embed sales_promotion_condition.json
-var salesPromotionConditionSchemaJson string
+//go:embed sales_promotion_point.json
+var salesPromotionPointSchemaJson string
 
-func SalesPromotionConditionSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.ParseModelJson(salesPromotionConditionSchemaJson)
+func SalesPromotionPointSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionPointSchemaJson)
 }
 
-//go:embed sales_promotion_condition_target.json
-var salesPromotionConditionTargetSchemaJson string
+//go:embed sales_promotion_pricelist.json
+var salesPromotionPricelistSchemaJson string
 
-func SalesPromotionConditionTargetSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.ParseModelJson(salesPromotionConditionTargetSchemaJson)
+func SalesPromotionPricelistSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionPricelistSchemaJson)
+}
+
+//go:embed sales_promotion_rule.json
+var salesPromotionRuleSchemaJson string
+
+func SalesPromotionRuleSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionRuleSchemaJson)
+}
+
+//go:embed sales_promotion_rule_product.json
+var salesPromotionRuleProductSchemaJson string
+
+func SalesPromotionRuleProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionRuleProductSchemaJson)
+}
+
+//go:embed sales_promotion_rule_category.json
+var salesPromotionRuleCategorySchemaJson string
+
+func SalesPromotionRuleCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionRuleCategorySchemaJson)
 }
 
 //go:embed sales_promotion_reward.json
@@ -206,82 +202,42 @@ func SalesPromotionRewardSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesPromotionRewardSchemaJson)
 }
 
-//go:embed sales_promotion_compatibility.json
-var salesPromotionCompatibilitySchemaJson string
+//go:embed sales_promotion_reward_product.json
+var salesPromotionRewardProductSchemaJson string
 
-func SalesPromotionCompatibilitySchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.ParseModelJson(salesPromotionCompatibilitySchemaJson)
+func SalesPromotionRewardProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionRewardProductSchemaJson)
 }
 
-// SalesPromotionProgram is one campaign: what has to be true, and what the customer then gets.
-type SalesPromotionProgram struct {
+//go:embed sales_promotion_reward_category.json
+var salesPromotionRewardCategorySchemaJson string
+
+func SalesPromotionRewardCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(salesPromotionRewardCategorySchemaJson)
+}
+
+// SalesPromotion is one promotion's configuration, not a use of it.
+type SalesPromotion struct {
 	basemodel.DynamicModelBase
 }
 
-func NewSalesPromotionProgram() *SalesPromotionProgram {
-	return &SalesPromotionProgram{basemodel.NewDynamicModel()}
+func NewSalesPromotionFrom(src dmodel.DynamicFields) *SalesPromotion {
+	return &SalesPromotion{basemodel.NewDynamicModel(src)}
 }
 
-func NewSalesPromotionProgramFrom(src dmodel.DynamicFields) *SalesPromotionProgram {
-	return &SalesPromotionProgram{basemodel.NewDynamicModel(src)}
-}
-
-func (this SalesPromotionProgram) GetId() *model.Id {
+func (this SalesPromotion) GetId() *model.Id {
 	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
-func (this SalesPromotionProgram) GetCode() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldCode)
+func (this SalesPromotion) GetProgramType() *string {
+	return this.GetFieldData().GetString(SalesPromotionFieldProgramType)
 }
 
-func (this SalesPromotionProgram) GetName() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldName)
+func (this SalesPromotion) GetStatus() *string {
+	return this.GetFieldData().GetString(SalesPromotionFieldStatus)
 }
 
-func (this SalesPromotionProgram) GetActivationType() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldActivationType)
-}
-
-func (this SalesPromotionProgram) GetPriority() *int32 {
-	return this.GetFieldData().GetInt32(SalesPromotionProgramFieldPriority)
-}
-
-func (this SalesPromotionProgram) GetValidFrom() *model.ModelDateTime {
-	return this.GetFieldData().GetModelDateTime(SalesPromotionProgramFieldValidFrom)
-}
-
-func (this SalesPromotionProgram) GetValidUntil() *model.ModelDateTime {
-	return this.GetFieldData().GetModelDateTime(SalesPromotionProgramFieldValidUntil)
-}
-
-func (this SalesPromotionProgram) GetStackPolicy() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldStackPolicy)
-}
-
-func (this SalesPromotionProgram) GetExclusiveGroup() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldExclusiveGroup)
-}
-
-func (this SalesPromotionProgram) GetUsageLimit() *int32 {
-	return this.GetFieldData().GetInt32(SalesPromotionProgramFieldUsageLimit)
-}
-
-func (this SalesPromotionProgram) GetReturnBehavior() *string {
-	return this.GetFieldData().GetString(SalesPromotionProgramFieldReturnBehavior)
-}
-
-func (this SalesPromotionProgram) GetIsArchived() *bool {
-	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
-}
-
-// RequiresVoucherCode reports whether this program only applies when a code is presented.
-func (this SalesPromotionProgram) RequiresVoucherCode() bool {
-	activation := this.GetActivationType()
-	return activation != nil &&
-		PromotionActivationType(*activation) == PromotionActivationVoucherCode
-}
-
-// SalesPromotionReward is one thing a program gives.
+// SalesPromotionReward is one benefit a promotion offers.
 type SalesPromotionReward struct {
 	basemodel.DynamicModelBase
 }
@@ -292,157 +248,4 @@ func NewSalesPromotionRewardFrom(src dmodel.DynamicFields) *SalesPromotionReward
 
 func (this SalesPromotionReward) GetId() *model.Id {
 	return this.GetFieldData().GetModelId(basemodel.FieldId)
-}
-
-func (this SalesPromotionReward) GetProgramId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionRewardFieldProgramId)
-}
-
-func (this SalesPromotionReward) GetSequence() *int32 {
-	return this.GetFieldData().GetInt32(SalesPromotionRewardFieldSequence)
-}
-
-func (this SalesPromotionReward) GetRewardType() *string {
-	return this.GetFieldData().GetString(SalesPromotionRewardFieldRewardType)
-}
-
-func (this SalesPromotionReward) GetValue() *decimal.Decimal {
-	return this.GetFieldData().GetDecimal(SalesPromotionRewardFieldValue)
-}
-
-func (this SalesPromotionReward) GetTargetScope() *string {
-	return this.GetFieldData().GetString(SalesPromotionRewardFieldTargetScope)
-}
-
-// SalesPromotionCondition is one test a program applies.
-type SalesPromotionCondition struct {
-	basemodel.DynamicModelBase
-}
-
-func NewSalesPromotionConditionFrom(src dmodel.DynamicFields) *SalesPromotionCondition {
-	return &SalesPromotionCondition{basemodel.NewDynamicModel(src)}
-}
-
-func (this SalesPromotionCondition) GetId() *model.Id {
-	return this.GetFieldData().GetModelId(basemodel.FieldId)
-}
-
-func (this SalesPromotionCondition) GetGroupId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionConditionFieldGroupId)
-}
-
-func (this SalesPromotionCondition) GetConditionType() *string {
-	return this.GetFieldData().GetString(SalesPromotionConditionFieldConditionType)
-}
-
-func (this SalesPromotionCondition) GetOperator() *string {
-	return this.GetFieldData().GetString(SalesPromotionConditionFieldOperator)
-}
-
-func (this SalesPromotionCondition) GetValueText() *string {
-	return this.GetFieldData().GetString(SalesPromotionConditionFieldValueText)
-}
-
-func (this SalesPromotionCondition) GetValueDecimal() *decimal.Decimal {
-	return this.GetFieldData().GetDecimal(SalesPromotionConditionFieldValueDecimal)
-}
-
-func (this SalesPromotionCondition) GetValueFrom() *decimal.Decimal {
-	return this.GetFieldData().GetDecimal(SalesPromotionConditionFieldValueFrom)
-}
-
-func (this SalesPromotionCondition) GetValueTo() *decimal.Decimal {
-	return this.GetFieldData().GetDecimal(SalesPromotionConditionFieldValueTo)
-}
-
-// SalesPromotionConditionGroup is one OR-branch of a program's eligibility.
-//
-// Conditions within a group are ANDed and groups are ORed with each other, so a program with no
-// group at all is unconditionally eligible rather than never eligible.
-type SalesPromotionConditionGroup struct {
-	basemodel.DynamicModelBase
-}
-
-func NewSalesPromotionConditionGroupFrom(src dmodel.DynamicFields) *SalesPromotionConditionGroup {
-	return &SalesPromotionConditionGroup{basemodel.NewDynamicModel(src)}
-}
-
-func (this SalesPromotionConditionGroup) GetId() *model.Id {
-	return this.GetFieldData().GetModelId(basemodel.FieldId)
-}
-
-func (this SalesPromotionConditionGroup) GetProgramId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionConditionGroupFieldProgramId)
-}
-
-// GetSequence is presentation order, not evaluation order: groups are ORed, which does not care.
-// It exists so an operator editing a program sees a stable list.
-func (this SalesPromotionConditionGroup) GetSequence() *int32 {
-	return this.GetFieldData().GetInt32(SalesPromotionConditionGroupFieldSequence)
-}
-
-// SalesPromotionConditionTarget is one member of a set-valued condition.
-//
-// The set-valued operators - in and not_in over variant ids, category ids, channel ids - live in
-// rows here rather than in a column, because a set has no sensible single-column form and JSON
-// would make eligibility a full table scan.
-type SalesPromotionConditionTarget struct {
-	basemodel.DynamicModelBase
-}
-
-func NewSalesPromotionConditionTargetFrom(src dmodel.DynamicFields) *SalesPromotionConditionTarget {
-	return &SalesPromotionConditionTarget{basemodel.NewDynamicModel(src)}
-}
-
-func (this SalesPromotionConditionTarget) GetId() *model.Id {
-	return this.GetFieldData().GetModelId(basemodel.FieldId)
-}
-
-func (this SalesPromotionConditionTarget) GetConditionId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionConditionTargetFieldConditionId)
-}
-
-// GetTargetType says what kind of thing GetTargetId names. It is part of the identity of the
-// target, not a hint: ids from two different modules could collide, and the pair is what actually
-// identifies the record.
-func (this SalesPromotionConditionTarget) GetTargetType() *string {
-	return this.GetFieldData().GetString(SalesPromotionConditionTargetFieldTargetType)
-}
-
-// GetTargetId names a record that may belong to another module, with no foreign key and no edge:
-// a constraint across that boundary would make retiring a product fail on promotion data. A target
-// whose record is gone simply stops matching.
-func (this SalesPromotionConditionTarget) GetTargetId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionConditionTargetFieldTargetId)
-}
-
-// SalesPromotionCompatibility is an explicit directive about one pair of programs.
-//
-// The relation is symmetric in meaning - if A cannot combine with B then B cannot combine with A -
-// but stored one-directionally, so a reader looks the pair up both ways round rather than
-// requiring two rows that could disagree with each other.
-type SalesPromotionCompatibility struct {
-	basemodel.DynamicModelBase
-}
-
-func NewSalesPromotionCompatibilityFrom(src dmodel.DynamicFields) *SalesPromotionCompatibility {
-	return &SalesPromotionCompatibility{basemodel.NewDynamicModel(src)}
-}
-
-func (this SalesPromotionCompatibility) GetId() *model.Id {
-	return this.GetFieldData().GetModelId(basemodel.FieldId)
-}
-
-func (this SalesPromotionCompatibility) GetProgramAId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionCompatibilityFieldProgramAId)
-}
-
-func (this SalesPromotionCompatibility) GetProgramBId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesPromotionCompatibilityFieldProgramBId)
-}
-
-// GetCompatibility is resolved in a fixed order: an explicit denied row wins always, then an
-// explicit allowed row permits, then the program's stack_policy decides.
-func (this SalesPromotionCompatibility) GetCompatibility() *string {
-	return this.GetFieldData().GetString(SalesPromotionCompatibilityFieldCompatibility)
 }

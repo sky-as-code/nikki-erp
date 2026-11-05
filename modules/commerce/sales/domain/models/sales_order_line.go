@@ -37,7 +37,10 @@ const (
 	SalesOrderLineFieldTaxAmount                = "tax_amount"
 	SalesOrderLineFieldFinalAmount              = "final_amount"
 	SalesOrderLineFieldPricingSource            = "pricing_source"
-	SalesOrderLineFieldSourcePromotionProgramId = "source_promotion_program_id"
+	SalesOrderLineFieldSourcePromotionId        = "source_promotion_id"
+	SalesOrderLineFieldSourcePromotionRewardId  = "source_promotion_reward_id"
+	SalesOrderLineFieldPromotionApplicationId   = "promotion_application_id"
+	SalesOrderLineFieldPricelistId              = "pricelist_id"
 	SalesOrderLineFieldSalesComboId             = "sales_combo_id"
 
 	SalesOrderLineEdgeSalesOrder = "sales_order"
@@ -249,12 +252,12 @@ func (this *SalesOrderLine) SetPricingSource(source *string) {
 	this.GetFieldData().SetString(SalesOrderLineFieldPricingSource, source)
 }
 
-func (this SalesOrderLine) GetSourcePromotionProgramId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesOrderLineFieldSourcePromotionProgramId)
+func (this SalesOrderLine) GetSourcePromotionId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderLineFieldSourcePromotionId)
 }
 
-func (this *SalesOrderLine) SetSourcePromotionProgramId(id *model.Id) {
-	this.GetFieldData().SetModelId(SalesOrderLineFieldSourcePromotionProgramId, id)
+func (this *SalesOrderLine) SetSourcePromotionId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderLineFieldSourcePromotionId, id)
 }
 
 func (this SalesOrderLine) GetSalesComboId() *model.Id {

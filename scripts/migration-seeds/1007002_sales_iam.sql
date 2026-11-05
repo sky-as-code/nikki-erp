@@ -53,12 +53,13 @@ BEGIN
 		('01M3SALES00000000000000016', jsonb_build_object('en-US', 'Sales - Pricelist Item', 'vi-VN', 'Bán hàng - Mục bảng giá bán'), 'sales_pricelist_item', 'Một mức giá cho một biến thể sản phẩm, theo một đơn vị tính, áp dụng từ một số lượng trở lên', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES00000000000000017', jsonb_build_object('en-US', 'Sales - Combo', 'vi-VN', 'Bán hàng - Combo'), 'sales_combo', 'Gói sản phẩm bán theo giá riêng, không phụ thuộc vào giá bán lẻ của từng thành phần', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES00000000000000018', jsonb_build_object('en-US', 'Sales - Combo Component', 'vi-VN', 'Bán hàng - Thành phần combo'), 'sales_combo_component', 'Một sản phẩm trong định nghĩa gói sản phẩm', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000034', jsonb_build_object('en-US', 'Sales - Promotion Program', 'vi-VN', 'Bán hàng - Chương trình khuyến mãi'), 'sales_promotion_program', 'Một chiến dịch: điều kiện cần thỏa mãn và quyền lợi khách hàng nhận được', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000035', jsonb_build_object('en-US', 'Sales - Promotion Condition Group', 'vi-VN', 'Bán hàng - Nhóm điều kiện khuyến mãi'), 'sales_promotion_condition_group', 'Tập hợp các điều kiện kết hợp theo phép VÀ; các nhóm kết hợp với nhau theo phép HOẶC', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000036', jsonb_build_object('en-US', 'Sales - Promotion Condition', 'vi-VN', 'Bán hàng - Điều kiện khuyến mãi'), 'sales_promotion_condition', 'Một phép kiểm tra mà khuyến mãi dùng để xác định có đủ điều kiện hay không', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000037', jsonb_build_object('en-US', 'Sales - Promotion Condition Target', 'vi-VN', 'Bán hàng - Đối tượng điều kiện khuyến mãi'), 'sales_promotion_condition_target', 'Một phần tử của điều kiện dạng tập hợp, chẳng hạn một biến thể sản phẩm đủ điều kiện', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000038', jsonb_build_object('en-US', 'Sales - Promotion Reward', 'vi-VN', 'Bán hàng - Phần thưởng khuyến mãi'), 'sales_promotion_reward', 'Một quyền lợi khuyến mãi mang lại: giảm giá, giá cố định hoặc tặng sản phẩm', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000039', jsonb_build_object('en-US', 'Sales - Promotion Compatibility', 'vi-VN', 'Bán hàng - Tương thích khuyến mãi'), 'sales_promotion_compatibility', 'Hai khuyến mãi có được áp dụng cùng một đơn hàng hay không', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000034', jsonb_build_object('en-US', 'Sales - Promotion', 'vi-VN', 'Bán hàng - Khuyến mãi'), 'sales_promotion', 'Cấu hình một chương trình khuyến mãi: điều kiện, ưu đãi và phạm vi kênh, điểm bán', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000035', jsonb_build_object('en-US', 'Sales - Promotion Rule', 'vi-VN', 'Bán hàng - Điều kiện khuyến mãi'), 'sales_promotion_rule', 'Một cách để đơn hàng đạt điều kiện của chương trình khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000036', jsonb_build_object('en-US', 'Sales - Promotion Rule Product', 'vi-VN', 'Bán hàng - Sản phẩm của điều kiện khuyến mãi'), 'sales_promotion_rule_product', 'Sản phẩm được tính khi xét điều kiện khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000037', jsonb_build_object('en-US', 'Sales - Promotion Rule Category', 'vi-VN', 'Bán hàng - Danh mục của điều kiện khuyến mãi'), 'sales_promotion_rule_category', 'Danh mục sản phẩm được tính khi xét điều kiện khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000038', jsonb_build_object('en-US', 'Sales - Promotion Reward', 'vi-VN', 'Bán hàng - Ưu đãi khuyến mãi'), 'sales_promotion_reward', 'Một lợi ích khách hàng có thể nhận: giảm giá, tặng sản phẩm hoặc miễn phí vận chuyển', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000039', jsonb_build_object('en-US', 'Sales - Promotion Reward Product', 'vi-VN', 'Bán hàng - Sản phẩm của ưu đãi khuyến mãi'), 'sales_promotion_reward_product', 'Sản phẩm được giảm giá bởi ưu đãi khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRM0000000000000A', jsonb_build_object('en-US', 'Sales - Promotion Reward Category', 'vi-VN', 'Bán hàng - Danh mục của ưu đãi khuyến mãi'), 'sales_promotion_reward_category', 'Danh mục sản phẩm được giảm giá bởi ưu đãi khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -130,41 +131,30 @@ BEGIN
 		('01M3SALES0000000000000001V', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000018', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES0000000000000001W', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ thành phần combo, hoặc khôi phục thành phần đã lưu trữ', '01M3SALES00000000000000018', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Promotion Program
-		('01M3SALES0000000000000003A', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003B', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003C', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003D', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003E', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ chương trình khuyến mãi, hoặc khôi phục chương trình đã lưu trữ', '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000000', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000001', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000002', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000003', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000004', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ hoặc khôi phục', '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000005', jsonb_build_object('en-US', 'Activate', 'vi-VN', 'Kích hoạt'), 'activate', 'Kiểm tra cấu hình và kích hoạt chương trình khuyến mãi', '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0340000000006', jsonb_build_object('en-US', 'Suspend', 'vi-VN', 'Tạm ngưng'), 'suspend', 'Tạm ngưng chương trình khuyến mãi để sửa cấu hình', '01M3SALES00000000000000034', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0350000000000', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0350000000001', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0350000000002', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0350000000003', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0360000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0370000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0380000000000', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0380000000001', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0380000000002', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0380000000003', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0390000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA00A0000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALESPRM0000000000000A', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		-- Sales Promotion Condition Group
-		('01M3SALES0000000000000003F', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003G', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003H', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003J', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003K', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ nhóm điều kiện khuyến mãi, hoặc khôi phục nhóm đã lưu trữ', '01M3SALES00000000000000035', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Promotion Condition
-		('01M3SALES0000000000000003M', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003N', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003P', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003Q', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003R', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ điều kiện khuyến mãi, hoặc khôi phục điều kiện đã lưu trữ', '01M3SALES00000000000000036', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Promotion Condition Target
-		('01M3SALES0000000000000003S', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003T', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003V', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003W', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003X', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ đối tượng điều kiện khuyến mãi, hoặc khôi phục đối tượng đã lưu trữ', '01M3SALES00000000000000037', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Promotion Reward
-		('01M3SALES0000000000000003Y', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000003Z', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000040', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000041', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000042', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ phần thưởng khuyến mãi, hoặc khôi phục phần thưởng đã lưu trữ', '01M3SALES00000000000000038', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Promotion Compatibility
-		('01M3SALES00000000000000043', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000044', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000045', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000046', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000047', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ quy tắc tương thích khuyến mãi, hoặc khôi phục quy tắc đã lưu trữ', '01M3SALES00000000000000039', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -259,8 +249,12 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES00000000000000048', jsonb_build_object('en-US', 'Sales - Voucher Code', 'vi-VN', 'Bán hàng - Mã phiếu giảm giá'), 'sales_voucher_code', 'Mã mà khách hàng xuất trình để kích hoạt một chương trình khuyến mãi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000049', jsonb_build_object('en-US', 'Sales - Voucher Redemption', 'vi-VN', 'Bán hàng - Lượt sử dụng phiếu giảm giá'), 'sales_voucher_redemption', 'Sổ ghi nhận đơn hàng nào đã sử dụng mã phiếu giảm giá nào', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000048', jsonb_build_object('en-US', 'Sales - Voucher', 'vi-VN', 'Bán hàng - Mã khuyến mãi'), 'sales_voucher', 'Mã kích hoạt một chương trình khuyến mãi; không mang giá trị riêng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000049', jsonb_build_object('en-US', 'Sales - Promotion Application', 'vi-VN', 'Bán hàng - Kết quả áp dụng khuyến mãi'), 'sales_promotion_application', 'Bằng chứng một chương trình đã cấp lợi ích cho một đơn đã xác nhận', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRM0000000000000B', jsonb_build_object('en-US', 'Sales - Promotion Allocation', 'vi-VN', 'Bán hàng - Phân bổ khuyến mãi'), 'sales_promotion_allocation', 'Phần lợi ích khuyến mãi phân bổ xuống từng dòng đơn', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRM0000000000000C', jsonb_build_object('en-US', 'Sales - Voucher Issuance', 'vi-VN', 'Bán hàng - Phát hành phiếu đơn sau'), 'sales_voucher_issuance', 'Dấu vết phiếu cho đơn hàng sau được cấp từ một đơn nguồn', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRM0000000000000D', jsonb_build_object('en-US', 'Sales - Order Voucher', 'vi-VN', 'Bán hàng - Mã gắn trên đơn'), 'sales_order_voucher', 'Mã khuyến mãi đã nhập trên đơn nháp; không giữ lượt dùng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRM0000000000000E', jsonb_build_object('en-US', 'Sales - Order Promotion Selection', 'vi-VN', 'Bán hàng - Lựa chọn ưu đãi trên đơn'), 'sales_order_promotion_selection', 'Ưu đãi khách đã chọn hoặc từ chối trên đơn nháp', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -270,13 +264,19 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Sales Voucher Code: full CRUD, an operator manages campaigns.
-		('01M3SALES0000000000000004A', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004B', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004C', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004D', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004E', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Ngừng áp dụng mã phiếu giảm giá, hoặc áp dụng lại', '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000000', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000001', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000002', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000003', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000004', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ hoặc khôi phục', '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000005', jsonb_build_object('en-US', 'Generate vouchers', 'vi-VN', 'Sinh mã hàng loạt'), 'generate', 'Sinh hàng loạt mã khuyến mãi cho một chương trình', '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0480000000006', jsonb_build_object('en-US', 'Revoke', 'vi-VN', 'Thu hồi'), 'revoke', 'Thu hồi mã khuyến mãi; không thể hoàn tác', '01M3SALES00000000000000048', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA0490000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000049', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA00B0000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALESPRM0000000000000B', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA00C0000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALESPRM0000000000000C', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA00D0000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALESPRM0000000000000D', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPRMA00E0000000000', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALESPRM0000000000000E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		-- Sales Voucher Redemption: read alone. See the note at the top of this file.
-		('01M3SALES0000000000000004F', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3SALES00000000000000049', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -860,6 +860,80 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		('01M3SALESRFCONFIRM00000001', jsonb_build_object('en-US', 'Confirm refund request', 'vi-VN', 'Xác nhận yêu cầu hoàn tiền'), 'confirm_return', 'Phê duyệt yêu cầu hoàn tiền, ghi chú và thực hiện hoàn tiền', '01M3SALES00000000000000076', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+-- Promotion and voucher roles (PROMO-003).
+-- A reader sees promotions, vouchers and what orders received; a manager configures, activates,
+-- suspends, generates and revokes. The right to process orders grants neither (BR §9.4).
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_roles'
+	) THEN
+		INSERT INTO "iam_roles" (
+			"id", "name", "description", "is_private", "owner_user_id", "is_requestable",
+			"is_required_attachment", "is_required_comment", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ROLE000000000000PROMO1', 'Xem khuyến mãi', 'Xem chương trình khuyến mãi, mã khuyến mãi và kết quả áp dụng, không được thay đổi', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ROLE000000000000PROMO2', 'Quản lý khuyến mãi', 'Tạo, sửa, kích hoạt, tạm ngưng chương trình khuyến mãi; sinh và thu hồi mã khuyến mãi', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id",
+			"role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ENT0000000000PROMO0001', 'Tạo sales_promotion', 'Tạo sales_promotion', 'create:sales_promotion:org', '01M3SALESPRMA0340000000000', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0002', 'Cập nhật sales_promotion', 'Cập nhật sales_promotion', 'update:sales_promotion:org', '01M3SALESPRMA0340000000001', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0003', 'Xóa sales_promotion', 'Xóa sales_promotion', 'delete:sales_promotion:org', '01M3SALESPRMA0340000000002', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0004', 'Xem sales_promotion', 'Xem sales_promotion', 'read:sales_promotion:org', '01M3SALESPRMA0340000000003', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0005', 'Xem sales_promotion', 'Xem sales_promotion', 'read:sales_promotion:org', '01M3SALESPRMA0340000000003', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0006', 'Đặt trạng thái lưu trữ sales_promotion', 'Đặt trạng thái lưu trữ sales_promotion', 'set_archived:sales_promotion:org', '01M3SALESPRMA0340000000004', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0007', 'Kích hoạt sales_promotion', 'Kích hoạt sales_promotion', 'activate:sales_promotion:org', '01M3SALESPRMA0340000000005', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0008', 'Tạm ngưng sales_promotion', 'Tạm ngưng sales_promotion', 'suspend:sales_promotion:org', '01M3SALESPRMA0340000000006', '01M3SALES00000000000000034', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0009', 'Tạo sales_promotion_rule', 'Tạo sales_promotion_rule', 'create:sales_promotion_rule:org', '01M3SALESPRMA0350000000000', '01M3SALES00000000000000035', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0010', 'Cập nhật sales_promotion_rule', 'Cập nhật sales_promotion_rule', 'update:sales_promotion_rule:org', '01M3SALESPRMA0350000000001', '01M3SALES00000000000000035', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0011', 'Xóa sales_promotion_rule', 'Xóa sales_promotion_rule', 'delete:sales_promotion_rule:org', '01M3SALESPRMA0350000000002', '01M3SALES00000000000000035', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0012', 'Xem sales_promotion_rule', 'Xem sales_promotion_rule', 'read:sales_promotion_rule:org', '01M3SALESPRMA0350000000003', '01M3SALES00000000000000035', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0013', 'Xem sales_promotion_rule', 'Xem sales_promotion_rule', 'read:sales_promotion_rule:org', '01M3SALESPRMA0350000000003', '01M3SALES00000000000000035', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0014', 'Xem sales_promotion_rule_product', 'Xem sales_promotion_rule_product', 'read:sales_promotion_rule_product:org', '01M3SALESPRMA0360000000000', '01M3SALES00000000000000036', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0015', 'Xem sales_promotion_rule_product', 'Xem sales_promotion_rule_product', 'read:sales_promotion_rule_product:org', '01M3SALESPRMA0360000000000', '01M3SALES00000000000000036', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0016', 'Xem sales_promotion_rule_category', 'Xem sales_promotion_rule_category', 'read:sales_promotion_rule_category:org', '01M3SALESPRMA0370000000000', '01M3SALES00000000000000037', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0017', 'Xem sales_promotion_rule_category', 'Xem sales_promotion_rule_category', 'read:sales_promotion_rule_category:org', '01M3SALESPRMA0370000000000', '01M3SALES00000000000000037', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0018', 'Tạo sales_promotion_reward', 'Tạo sales_promotion_reward', 'create:sales_promotion_reward:org', '01M3SALESPRMA0380000000000', '01M3SALES00000000000000038', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0019', 'Cập nhật sales_promotion_reward', 'Cập nhật sales_promotion_reward', 'update:sales_promotion_reward:org', '01M3SALESPRMA0380000000001', '01M3SALES00000000000000038', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0020', 'Xóa sales_promotion_reward', 'Xóa sales_promotion_reward', 'delete:sales_promotion_reward:org', '01M3SALESPRMA0380000000002', '01M3SALES00000000000000038', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0021', 'Xem sales_promotion_reward', 'Xem sales_promotion_reward', 'read:sales_promotion_reward:org', '01M3SALESPRMA0380000000003', '01M3SALES00000000000000038', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0022', 'Xem sales_promotion_reward', 'Xem sales_promotion_reward', 'read:sales_promotion_reward:org', '01M3SALESPRMA0380000000003', '01M3SALES00000000000000038', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0023', 'Xem sales_promotion_reward_product', 'Xem sales_promotion_reward_product', 'read:sales_promotion_reward_product:org', '01M3SALESPRMA0390000000000', '01M3SALES00000000000000039', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0024', 'Xem sales_promotion_reward_product', 'Xem sales_promotion_reward_product', 'read:sales_promotion_reward_product:org', '01M3SALESPRMA0390000000000', '01M3SALES00000000000000039', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0025', 'Xem sales_promotion_reward_category', 'Xem sales_promotion_reward_category', 'read:sales_promotion_reward_category:org', '01M3SALESPRMA00A0000000000', '01M3SALESPRM0000000000000A', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0026', 'Xem sales_promotion_reward_category', 'Xem sales_promotion_reward_category', 'read:sales_promotion_reward_category:org', '01M3SALESPRMA00A0000000000', '01M3SALESPRM0000000000000A', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0027', 'Tạo sales_voucher', 'Tạo sales_voucher', 'create:sales_voucher:org', '01M3SALESPRMA0480000000000', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0028', 'Cập nhật sales_voucher', 'Cập nhật sales_voucher', 'update:sales_voucher:org', '01M3SALESPRMA0480000000001', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0029', 'Xóa sales_voucher', 'Xóa sales_voucher', 'delete:sales_voucher:org', '01M3SALESPRMA0480000000002', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0030', 'Xem sales_voucher', 'Xem sales_voucher', 'read:sales_voucher:org', '01M3SALESPRMA0480000000003', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0031', 'Xem sales_voucher', 'Xem sales_voucher', 'read:sales_voucher:org', '01M3SALESPRMA0480000000003', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0032', 'Đặt trạng thái lưu trữ sales_voucher', 'Đặt trạng thái lưu trữ sales_voucher', 'set_archived:sales_voucher:org', '01M3SALESPRMA0480000000004', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0033', 'Sinh mã hàng loạt sales_voucher', 'Sinh mã hàng loạt sales_voucher', 'generate:sales_voucher:org', '01M3SALESPRMA0480000000005', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0034', 'Thu hồi sales_voucher', 'Thu hồi sales_voucher', 'revoke:sales_voucher:org', '01M3SALESPRMA0480000000006', '01M3SALES00000000000000048', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0035', 'Xem sales_promotion_application', 'Xem sales_promotion_application', 'read:sales_promotion_application:org', '01M3SALESPRMA0490000000000', '01M3SALES00000000000000049', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0036', 'Xem sales_promotion_application', 'Xem sales_promotion_application', 'read:sales_promotion_application:org', '01M3SALESPRMA0490000000000', '01M3SALES00000000000000049', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0037', 'Xem sales_promotion_allocation', 'Xem sales_promotion_allocation', 'read:sales_promotion_allocation:org', '01M3SALESPRMA00B0000000000', '01M3SALESPRM0000000000000B', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0038', 'Xem sales_promotion_allocation', 'Xem sales_promotion_allocation', 'read:sales_promotion_allocation:org', '01M3SALESPRMA00B0000000000', '01M3SALESPRM0000000000000B', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0039', 'Xem sales_voucher_issuance', 'Xem sales_voucher_issuance', 'read:sales_voucher_issuance:org', '01M3SALESPRMA00C0000000000', '01M3SALESPRM0000000000000C', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0040', 'Xem sales_voucher_issuance', 'Xem sales_voucher_issuance', 'read:sales_voucher_issuance:org', '01M3SALESPRMA00C0000000000', '01M3SALESPRM0000000000000C', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0041', 'Xem sales_order_voucher', 'Xem sales_order_voucher', 'read:sales_order_voucher:org', '01M3SALESPRMA00D0000000000', '01M3SALESPRM0000000000000D', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0042', 'Xem sales_order_voucher', 'Xem sales_order_voucher', 'read:sales_order_voucher:org', '01M3SALESPRMA00D0000000000', '01M3SALESPRM0000000000000D', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0043', 'Xem sales_order_promotion_selection', 'Xem sales_order_promotion_selection', 'read:sales_order_promotion_selection:org', '01M3SALESPRMA00E0000000000', '01M3SALESPRM0000000000000E', '01M3ROLE000000000000PROMO2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT0000000000PROMO0044', 'Xem sales_order_promotion_selection', 'Xem sales_order_promotion_selection', 'read:sales_order_promotion_selection:org', '01M3SALESPRMA00E0000000000', '01M3SALESPRM0000000000000E', '01M3ROLE000000000000PROMO1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

@@ -1,0 +1,51 @@
+{
+	"name": "sales_promotion_rule_category",
+	"label": "sales_promotion_rule_category.label",
+	"table_name": "sales_promotion_rule_categories",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "sls_promo_rule_cats_tid_rule_cat", "fields": ["rule_id", "category_id"] }
+	],
+	"search_indexes": [{ "index_name": "sls_promo_rule_cats_tid_cat", "fields": ["category_id"] }],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "rule_id",
+			"label": "fields.rule_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": { "en-US": "The rule this category selector narrows. Written only through the rule's manage_categories action." }
+		},
+		{
+			"name": "category_id",
+			"label": "fields.category_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": { "en-US": "Matches products of this category and of every category beneath it (BR-C03)." }
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.traceable_model"],
+
+	"edges_to": [
+		{
+			"edge": "rule",
+			"label": { "en-US": "Rule" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_rule",
+			"key_map": { "rule_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "category",
+			"label": { "en-US": "Product category" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_category",
+			"key_map": { "category_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}
