@@ -116,7 +116,9 @@ func allowOverrideFor(field *dmodel.ModelField, record *models.SettingsRecord) b
 
 // isEditable reports whether this actor may change the item.
 //
-// A tenant owner may always edit, at every level — that is what makes enforcement possible. Below
+// A tenant owner may always edit, at every level — that is what makes enforcement possible. This
+// answers for the owner, not the caller: a caller reading the tenant's rows without the right to
+// write them is reported read-only by the application service. Below
 // the tenant, an item whose schema says allow_override=false is managed by the tenant admin and is
 // shown read-only rather than hidden, so the owner can see the value that applies to them.
 func isEditable(level string, ownerType string, allowOverride bool) bool {

@@ -99,3 +99,43 @@ func fillFromNeighbours(sortedCodes []LanguageCode, translations LangJson) LangJ
 	}
 	return result
 }
+
+// TextIn picks the text to show in `lang`: that language, then DefaultLanguageCode, then en-US, then
+// the lowest-sorted language holding text. A `$ref` value is a translation key, never a text, so it
+// is skipped; an empty string means no language holds text.
+func (this LangJson) TextIn(lang LanguageCode) string {
+	if canonical, err := ToBCP47LanguageCode(lang); err == nil {
+		lang = canonical
+	}
+	for _, code := range []LanguageCode{lang, DefaultLanguageCode, LanguageCodeEnUs} {
+		if text := this.textOf(code); text != "" {
+			return text
+		}
+	}
+	codes := make([]LanguageCode, 0, len(this))
+	for code, text := range this {
+		if code != LanguageCodeRef && text != "" {
+			codes = append(codes, code)
+		}
+	}
+	if len(codes) == 0 {
+		return ""
+	}
+	sort.Strings(codes)
+	return this[codes[0]]
+}
+
+func (this LangJson) textOf(code LanguageCode) string {
+	if code == "" || code == LanguageCodeRef {
+		return ""
+	}
+	if text := this[code]; text != "" {
+		return text
+	}
+	for key, text := range this {
+		if canonical, err := ToBCP47LanguageCode(key); err == nil && canonical == code && text != "" {
+			return text
+		}
+	}
+	return ""
+}

@@ -200,15 +200,6 @@ func TestStatusValuesMatchConstants(t *testing.T) {
 			},
 		},
 		{
-			SalesVoucherCodeSchemaName, SalesVoucherCodeSchemaBuilder(),
-			SalesVoucherCodeFieldStatus,
-			[]string{
-				string(VoucherCodeStatusActive),
-				string(VoucherCodeStatusDisabled),
-				string(VoucherCodeStatusExhausted),
-			},
-		},
-		{
 			SalesBillSchemaName, SalesBillSchemaBuilder(), SalesBillFieldStatus,
 			[]string{
 				string(SalesBillStatusOpen),
@@ -222,16 +213,6 @@ func TestStatusValuesMatchConstants(t *testing.T) {
 			[]string{
 				string(SalesBillRelationSplitInto),
 				string(SalesBillRelationMergedInto),
-			},
-		},
-		{
-			SalesVoucherRedemptionSchemaName, SalesVoucherRedemptionSchemaBuilder(),
-			SalesVoucherRedemptionFieldStatus,
-			[]string{
-				string(VoucherRedemptionStatusReserved),
-				string(VoucherRedemptionStatusRedeemed),
-				string(VoucherRedemptionStatusReleased),
-				string(VoucherRedemptionStatusReversed),
 			},
 		},
 	}

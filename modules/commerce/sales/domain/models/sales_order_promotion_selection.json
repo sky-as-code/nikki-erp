@@ -1,0 +1,107 @@
+{
+	"name": "sales_order_promotion_selection",
+	"label": "sales_order_promotion_selection.label",
+	"table_name": "sales_order_promotion_selections",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sls_ord_promo_sels_tid_order_promo",
+			"fields": [
+				"order_id",
+				"promotion_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The draft order the choice was made on."
+			}
+		},
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The promotion whose reward was chosen or declined."
+			}
+		},
+		{
+			"name": "reward_id",
+			"label": "fields.reward_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The reward chosen; null when declined (BR-R12, D6)."
+			}
+		},
+		{
+			"name": "decision",
+			"label": "fields.decision",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"accepted",
+					"declined"
+				]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "accepted a reward, or declined the promotion's gift."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
+		"core.basemodel.versioned_model"
+	],
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": {
+				"en-US": "Order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"order_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "reward",
+			"label": {
+				"en-US": "Reward"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion_reward",
+			"key_map": {
+				"reward_id": "id"
+			},
+			"on_delete": "SET NULL"
+		}
+	]
+}

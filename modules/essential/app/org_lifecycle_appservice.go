@@ -44,11 +44,15 @@ type OrgLifecycleAppServiceImpl struct {
 // InitOrg writes the categories, then their units, then points each category at its reference
 // unit: a category and its reference unit name each other, so one must exist without the edge.
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	cats, err := defaults.Load(orgDefaults.Files, models.UomCatSchemaName)
+	lang, err := activationLanguage()
 	if err != nil {
 		return err
 	}
-	uoms, err := defaults.Load(orgDefaults.Files, models.UomSchemaName)
+	cats, err := defaults.Load(orgDefaults.Files, models.UomCatSchemaName, lang)
+	if err != nil {
+		return err
+	}
+	uoms, err := defaults.Load(orgDefaults.Files, models.UomSchemaName, lang)
 	if err != nil {
 		return err
 	}

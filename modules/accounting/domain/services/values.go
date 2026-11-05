@@ -47,30 +47,14 @@ func idString(value *model.Id) string {
 	return string(*value)
 }
 
-// langText picks a display string out of a localized name. The snapshot needs a single frozen
-// name, so English is preferred and any other locale accepted. Map iteration is unordered, so the
-// fallback picks deterministically rather than arbitrarily.
+// langText picks the frozen display string a snapshot needs out of a localized name. The tax line
+// carries no language, so it is the default one.
 func langText(tax *models.Tax) string {
 	name := tax.GetName()
 	if name == nil {
 		return ""
 	}
-	if text, ok := (*name)[model.LanguageCodeEnUs]; ok && text != "" {
-		return text
-	}
-
-	bestCode := ""
-	bestText := ""
-	for code, text := range *name {
-		if text == "" {
-			continue
-		}
-		if bestCode == "" || string(code) < bestCode {
-			bestCode = string(code)
-			bestText = text
-		}
-	}
-	return bestText
+	return name.TextIn(model.DefaultLanguageCode)
 }
 
 // conditionValue flattens a stored condition operand into a scalar and, for a list operand, its

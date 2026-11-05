@@ -1,0 +1,32 @@
+{
+	"name": "sales_promotion_point",
+	"label": "sales_promotion_point.label",
+	"table_name": "sales_promotion_points",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "sls_promo_pt_tid_promo_pt", "fields": ["promotion_id", "sales_point_id"] }
+	],
+	"search_indexes": [{ "index_name": "sls_promo_pt_tid_pt", "fields": ["sales_point_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The promotion this scope row belongs to. Written only through the promotion's manage_points action, which checks the target is in the promotion's org; there is no CRUD on this junction."
+			}
+		},
+		{
+			"name": "sales_point_id",
+			"label": "fields.sales_point_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A sales point the promotion may run at. A point under a linked channel is not implied: it must be linked itself (BR-S01)."
+			}
+		}
+	]
+}

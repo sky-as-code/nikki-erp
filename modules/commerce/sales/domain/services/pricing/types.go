@@ -63,6 +63,9 @@ type PricelistItem struct {
 	// between otherwise identical rules.
 	Id string
 
+	// PricelistId is the list the rule belongs to, echoed onto the line (plan D2).
+	PricelistId string
+
 	// AppliesTo names which of the three target fields below is meaningful, or ALL_PRODUCTS. The
 	// schema enum, as a string so this package depends on no model.
 	AppliesTo string
@@ -132,44 +135,6 @@ type ComboComponentInput struct {
 	ReferencePrice decimal.Decimal
 }
 
-// AppliedProgram is a promotion the caller has already found eligible and resolved for conflicts.
-// The engine applies what it is given, in the order it is given.
-type AppliedProgram struct {
-	ProgramId   string
-	ProgramName string
-
-	// VoucherCode is set when this program was activated by a code, for the adjustment description.
-	VoucherCode string
-
-	Rewards []RewardInput
-}
-
-// RewardInput is one thing a program grants.
-type RewardInput struct {
-	RewardId string
-	Sequence int32
-
-	// Type is one of the models.PromotionReward* values, as a string so this package imports no
-	// models.
-	Type string
-
-	Value decimal.Decimal
-
-	// TargetScope is "order" or "line".
-	TargetScope string
-
-	// TargetLineKeys names the lines a line-scoped reward applies to. Empty means every line.
-	TargetLineKeys []string
-
-	// FreeProductVariantId and FreeUom describe the giveaway line a free_quantity reward creates. A
-	// free item is a real order line, not an adjustment: Inventory must fulfil it and its VAT
-	// treatment is a line-level question.
-	FreeProductVariantId string
-	FreeUomId            string
-	FreeProductCode      string
-	FreeProductName      string
-}
-
 // Context is what the engine needs to know about the sale, beyond the basket.
 type Context struct {
 	// CurrencyScale is the currency's own number of decimal places (0 for VND). The final rounding
@@ -206,7 +171,6 @@ const (
 	AdjustmentConditionalPrice   = "conditional_price"
 	AdjustmentPercentageDiscount = "percentage_discount"
 	AdjustmentFixedDiscount      = "fixed_discount"
-	AdjustmentVoucher            = "voucher"
 	AdjustmentManualDiscount     = "manual_discount"
 	AdjustmentRounding           = "rounding"
 )
@@ -252,10 +216,10 @@ type LineResult struct {
 	// provenance somebody can go and read.
 	PricelistItemId string
 
-	// SourcePromotionProgramId ties a giveaway line back to the campaign that gave it away, for
-	// campaign cost review.
-	SourcePromotionProgramId string
-	ComboId                  string
+	// PricelistId is the list PricelistItemId belongs to, recorded on the line so a promotion
+	// scoped to pricelists can tell which list priced it (plan D2).
+	PricelistId string
+	ComboId     string
 
 	BaseUnitPrice      decimal.Decimal
 	EffectiveUnitPrice decimal.Decimal
@@ -301,7 +265,6 @@ type Input struct {
 	Lines          []LineInput
 	PricelistItems []PricelistItem
 	Combos         []ComboDefinition
-	Programs       []AppliedProgram
 
 	// ManualDiscounts are the operator overrides stored against this order. They must be engine
 	// INPUT, replayed on every reprice: repricing deletes the whole adjustment chain and rewrites it

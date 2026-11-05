@@ -43,3 +43,29 @@ func TestLangJsonNormalizeDoesNotMutateInput(t *testing.T) {
 	_ = input.Normalize([]LanguageCode{LanguageCodeEnUs, LanguageCodeViVn})
 	assert.Equal(t, LangJson{"en-US": "Hi"}, input)
 }
+
+func TestLangJsonTextIn(t *testing.T) {
+	cases := []struct {
+		name  string
+		input LangJson
+		lang  LanguageCode
+		want  string
+	}{
+		{"nil is empty", nil, LanguageCodeEnUs, ""},
+		{"requested wins", LangJson{"en-US": "Stock", "vi-VN": "Kho"}, LanguageCodeEnUs, "Stock"},
+		{"requested non-canonical", LangJson{"en-US": "Stock", "vi-VN": "Kho"}, "vi_vn", "Kho"},
+		{"non-canonical key", LangJson{"vi_VN": "Kho"}, LanguageCodeViVn, "Kho"},
+		{"falls back to default", LangJson{"en-US": "Stock", "vi-VN": "Kho"}, "fr-FR", "Kho"},
+		{"falls back to en-US", LangJson{"en-US": "Stock", "de-DE": "Lager"}, "fr-FR", "Stock"},
+		{"falls back to lowest key", LangJson{"fr-FR": "Stock", "de-DE": "Lager"}, "ja-JP", "Lager"},
+		{"empty requested skipped", LangJson{"vi-VN": "", "en-US": "Stock"}, LanguageCodeViVn, "Stock"},
+		{"ref skipped", LangJson{"$ref": "a.b"}, LanguageCodeEnUs, ""},
+		{"ref skipped with text", LangJson{"$ref": "a.b", "fr-FR": "x"}, "$ref", "x"},
+		{"empty lang", LangJson{"de-DE": "Lager"}, "", "Lager"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.input.TextIn(tc.lang))
+		})
+	}
+}

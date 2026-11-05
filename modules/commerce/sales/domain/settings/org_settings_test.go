@@ -55,7 +55,7 @@ func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 		_, ok := schema.Field(name)
 		assert.Truef(t, ok, "the schema declares no %q field, so nothing can ever configure it", name)
 	}
-	assert.Len(t, schema.Fields(), 17, "a field added without a constant is unreachable by name")
+	assert.Len(t, schema.Fields(), 18, "a field added without a constant is unreachable by name")
 }
 
 // The settings that change what money MEANS must not be overridable. Absent metadata reads as

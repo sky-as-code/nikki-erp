@@ -84,6 +84,9 @@ func (*EssentialModule) Dependants() []string {
 		// Payment & Invoice numbers invoices from a sequence definition whose id its org settings
 		// hold, so it is asked before a definition is archived.
 		"paymentinvoice",
+		// The vending machine numbers kiosks and games from sequence definitions whose ids its org
+		// settings hold. It ships only in the hosted app; a dependant that is not loaded is not asked.
+		"vendingmachine",
 	}
 }
 

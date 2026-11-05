@@ -122,6 +122,15 @@
 			"type": "many:one",
 			"dest_schema": "sales_point",
 			"key_map": { "sales_point_id": "id" }
+		},
+		{
+			"edge": "promotions",
+			"label": { "en-US": "Promotions" },
+			"type": "many:many",
+			"peer_schema": "sales_promotion",
+			"through_schema": "sales_promotion_pricelist",
+			"src_field_prefix": "sales_pricelist",
+			"on_delete": "NO ACTION"
 		}
 	]
 }

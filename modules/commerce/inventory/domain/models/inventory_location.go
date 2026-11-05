@@ -63,6 +63,7 @@ const (
 	InventoryLocationFieldStorageCategoryId         = "storage_category_id"
 	InventoryLocationFieldRemovalStrategy           = "removal_strategy"
 	InventoryLocationFieldIsReplenishmentDestConfig = "is_replenishment_destination"
+	InventoryLocationFieldAcceptDirectTransfers     = "accept_direct_transfers"
 	InventoryLocationFieldIsSystemGenerated         = "is_system_generated"
 	InventoryLocationFieldStatus                    = "status"
 	InventoryLocationFieldDescription               = "description"
@@ -187,6 +188,16 @@ func (this InventoryLocation) GetIsSystemGenerated() *bool {
 
 func (this *InventoryLocation) SetIsSystemGenerated(v *bool) {
 	this.GetFieldData()[InventoryLocationFieldIsSystemGenerated] = v
+}
+
+// GetAcceptDirectTransfers reports whether a Stock Transfer may name this location as its source or
+// destination; a location fed only by its managing module (a kiosk slot) refuses.
+func (this InventoryLocation) GetAcceptDirectTransfers() *bool {
+	return this.GetFieldData().GetBool(InventoryLocationFieldAcceptDirectTransfers)
+}
+
+func (this *InventoryLocation) SetAcceptDirectTransfers(v *bool) {
+	this.GetFieldData()[InventoryLocationFieldAcceptDirectTransfers] = v
 }
 
 func (this InventoryLocation) GetIsArchived() *bool {

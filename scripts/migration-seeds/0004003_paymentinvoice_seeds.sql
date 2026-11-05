@@ -27,10 +27,10 @@ BEGIN
 		INSERT INTO "paymentinvoice_payment_methods" (
 			"id", "code", "adapter_code", "name", "description", "currency_id", "min_amount", "max_amount", "is_active", "config", "is_archived", "created_at", "updated_at", "etag"
 		) VALUES
-		('01M3PM00000000000000000001', 'MOMO', 'momo', '{"en-US": "MoMo Wallet", "vi-VN": "Vi MoMo"}'::jsonb, 'E-wallet payment, scanned from the customer phone', NULL, 1000, 20000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3PM00000000000000000002', 'VIETQR', 'vietqr', '{"en-US": "VietQR Bank Transfer", "vi-VN": "Chuyen khoan VietQR"}'::jsonb, 'Bank transfer against a generated QR code', NULL, 1000, 500000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3PM00000000000000000003', 'MPOS', 'mpos', '{"en-US": "mPOS Card Terminal", "vi-VN": "May POS the"}'::jsonb, 'Card payment prompted on a physical terminal', NULL, 10000, 50000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3PM00000000000000000004', 'MBBANK', 'mbbank', '{"en-US": "MB Bank Transfer", "vi-VN": "Chuyen khoan MB Bank"}'::jsonb, 'Bank transfer through MB Bank. Seeded active on purpose although no mbbank adapter ships: it is the deployment-dependent usability gate made visible, and the merged view must report it unusable rather than absent', NULL, 1000, 500000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3PM00000000000000000001', 'MOMO', 'momo', 'Ví MoMo', 'Thanh toán ví điện tử, quét từ điện thoại của khách hàng', NULL, 1000, 20000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3PM00000000000000000002', 'VIETQR', 'vietqr', 'Chuyển khoản VietQR', 'Chuyển khoản ngân hàng qua mã QR được tạo', NULL, 1000, 500000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3PM00000000000000000003', 'MPOS', 'mpos', 'Máy POS thẻ', 'Thanh toán thẻ trên máy POS vật lý', NULL, 10000, 50000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3PM00000000000000000004', 'MBBANK', 'mbbank', 'Chuyển khoản MB Bank', 'Chuyển khoản ngân hàng qua MB Bank. Cố ý khởi tạo ở trạng thái hoạt động dù chưa có adapter mbbank đi kèm: đây là điều kiện khả dụng phụ thuộc triển khai được thể hiện ra, và khung nhìn hợp nhất phải báo phương thức này không khả dụng thay vì không tồn tại', NULL, 1000, 500000001, true, NULL, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -57,9 +57,9 @@ BEGIN
 			"increment", "initial_value", "reset_period", "timezone", "issuance_retention_days", "first_issued_at",
 			"is_archived", "created_at", "updated_at", "created_by", "etag"
 		) VALUES
-		('01M3SQND000000000000000011', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'paymentinvoice', 'paymentinvoice.invoice', jsonb_build_object('en-US', 'Invoice number', 'vi-VN', 'Số hóa đơn'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SQND000000000000000021', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'paymentinvoice', 'paymentinvoice.invoice', jsonb_build_object('en-US', 'Invoice number', 'vi-VN', 'Số hóa đơn'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SQND000000000000000031', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'paymentinvoice', 'paymentinvoice.invoice', jsonb_build_object('en-US', 'Invoice number', 'vi-VN', 'Số hóa đơn'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SQND000000000000000011', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'paymentinvoice', 'paymentinvoice.invoice', 'Số hóa đơn', NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQND000000000000000021', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'paymentinvoice', 'paymentinvoice.invoice', 'Số hóa đơn', NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQND000000000000000031', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'paymentinvoice', 'paymentinvoice.invoice', 'Số hóa đơn', NULL, NULL, 'org', 'sequence', 'increment', NULL, 'INV-%(range_year)s-', NULL, 6, 1, 1, 'yearly', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT DO NOTHING;
 
 		-- Seeds run before the first boot registers the module's org settings, and a settings record

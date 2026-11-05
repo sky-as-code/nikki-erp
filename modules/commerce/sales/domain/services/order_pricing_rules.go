@@ -70,6 +70,7 @@ func loadEnginePricelistItems(
 
 		items = append(items, pricing.PricelistItem{
 			Id:                stringOf(row, models.SalesPricelistItemFieldId),
+			PricelistId:       stringOf(row, models.SalesPricelistItemFieldSalesPricelistId),
 			AppliesTo:         stringOf(row, models.SalesPricelistItemFieldAppliesTo),
 			ProductVariantId:  stringOf(row, models.SalesPricelistItemFieldProductVariantId),
 			ProductTemplateId: stringOf(row, models.SalesPricelistItemFieldProductTemplateId),

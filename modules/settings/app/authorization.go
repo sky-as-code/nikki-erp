@@ -34,6 +34,16 @@ func assertPermission(ctx corectx.Context, actionCode string, resourceCode strin
 	})
 }
 
+// hasPermission is assertPermission as a yes/no answer, for a read that narrows what it reports
+// instead of refusing.
+func hasPermission(ctx corectx.Context, actionCode string, resourceCode string) bool {
+	return reguard.HasPermission(ctx, reguard.Perm{
+		ActionCode:   actionCode,
+		ResourceCode: resourceCode,
+		Scope:        reguard.ResourceScopeTenant,
+	})
+}
+
 // assertOrgSettingsAccess authorizes an org-level read or write. A request that names no org keeps
 // the tenant-scope check and lets the domain service infer the org, as before org_id existed.
 //

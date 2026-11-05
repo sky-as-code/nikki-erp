@@ -4,7 +4,7 @@
 		"code": "VN-VND-DOC",
 		"name": {
 			"en-US": "Vietnam VND document rounding",
-			"vi-VN": "Lam tron VND theo chung tu"
+			"vi-VN": "Làm tròn VND theo chứng từ"
 		},
 		"jurisdiction_id": "@tax_jurisdiction_vn",
 		"currency_code": "VND",

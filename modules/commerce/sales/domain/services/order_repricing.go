@@ -32,6 +32,9 @@ type RepriceResult struct {
 
 	// LineCount lets a caller tell an empty draft from a failure.
 	LineCount int
+
+	// Promotion is the promotion evaluation this reprice stored; confirm commits it.
+	Promotion *PromotionQuoteResult
 }
 
 // RepriceOrder recomputes an order from its stored lines and writes the result back.
@@ -76,9 +79,15 @@ func RepriceOrder(
 	}
 	input.Context.TaxByLineKey = basketTax.ByLineKey
 
-	result := pricing.Calculate(input)
+	result, basketTax, quote, vErrs, err := runPromotions(ctx, promotionRun{
+		order: orderRecord, input: input, base: pricing.Calculate(input), baseTax: basketTax,
+		taxSvc: taxSvc, policy: policy,
+	})
+	if err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
 
-	if err := writeRepricedOrder(ctx, orderId, orderRecord, result, basketTax); err != nil {
+	if err := writeRepricedOrder(ctx, orderId, orderRecord, result, basketTax, quote); err != nil {
 		return nil, nil, err
 	}
 
@@ -88,6 +97,7 @@ func RepriceOrder(
 		TaxTotal:      result.TaxTotal,
 		GrandTotal:    result.GrandTotal,
 		LineCount:     len(result.Lines),
+		Promotion:     quote,
 	}, nil, nil
 }
 
@@ -114,7 +124,7 @@ func buildPricingInput(
 		// A giveaway line is an output of pricing; feeding one back in would give away another free
 		// item on every reprice, compounding each time.
 		if stringOf(record, models.SalesOrderLineFieldLineType) ==
-			string(models.SalesOrderLineTypePromotionReward) {
+			string(models.SalesOrderLineTypePromotionGift) {
 			continue
 		}
 
@@ -205,12 +215,16 @@ func writeRepricedOrder(
 	orderRecord dmodel.DynamicFields,
 	result pricing.Result,
 	basketTax *BasketTax,
+	quote *PromotionQuoteResult,
 ) error {
 	return withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
 		if err := writeLineResults(tranxCtx, result.Lines); err != nil {
 			return err
 		}
 		if err := replaceAdjustments(tranxCtx, orderId, result.Adjustments); err != nil {
+			return err
+		}
+		if err := writePromotionDraft(tranxCtx, orderId, quote); err != nil {
 			return err
 		}
 		return writeOrderTotals(tranxCtx, orderId, orderRecord, result, basketTax)
@@ -234,6 +248,11 @@ func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
 			models.SalesOrderLineFieldTaxAmount:          line.TaxAmount,
 			models.SalesOrderLineFieldFinalAmount:        line.FinalAmount,
 			models.SalesOrderLineFieldPricingSource:      line.PricingSource,
+			// The list that priced the line, read by a pricelist-scoped promotion (D2).
+			models.SalesOrderLineFieldPricelistId: nil,
+		}
+		if line.PricelistId != "" {
+			update[models.SalesOrderLineFieldPricelistId] = line.PricelistId
 		}
 		if _, err := engineRepo.Update(ctx, update); err != nil {
 			return err

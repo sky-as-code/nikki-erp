@@ -2,7 +2,7 @@
 	{
 		"$alias": "point_bo001",
 		"sales_channel_id": "@channel_bo",
-		"name": "Back Office",
+		"name": {"en-US": "Back Office", "vi-VN": "Văn phòng"},
 		"code": "BO001",
 		"status": "active",
 		"fulfillment_enabled": false

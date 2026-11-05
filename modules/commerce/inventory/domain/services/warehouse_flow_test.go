@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
@@ -108,9 +109,21 @@ func TestObsoleteSystemLocations(t *testing.T) {
 func specCodes(specs []systemLocationSpec) []string {
 	codes := make([]string, 0, len(specs))
 	for _, spec := range specs {
-		codes = append(codes, spec.Name)
+		codes = append(codes, spec.Code)
 	}
 	return codes
+}
+
+// A stop's name follows the org language while its code, which the flow legs use, stays fixed.
+func TestStopNamesFollowTheOrgLanguage(t *testing.T) {
+	assert.Equal(t, "Tồn kho", stockLocationNames.TextIn(model.LanguageCodeViVn))
+	assert.Equal(t, "Stock", stockLocationNames.TextIn(model.LanguageCodeEnUs))
+	for _, spec := range []systemLocationSpec{inputStop, qualityStop, packingStop, outputStop} {
+		assert.Equal(t, spec.Code, spec.Names.TextIn(model.LanguageCodeEnUs), spec.Code)
+		assert.NotEqual(t, spec.Code, spec.Names.TextIn(model.LanguageCodeViVn), spec.Code)
+		assert.Equal(t, spec.Field, stopField(spec.Code), spec.Code)
+	}
+	assert.Equal(t, "Khu nhập hàng", inputStop.Names.TextIn(model.LanguageCodeViVn))
 }
 
 func TestIsKnownFlow(t *testing.T) {

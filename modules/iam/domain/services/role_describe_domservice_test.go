@@ -28,8 +28,8 @@ func TestDescribedEntitlementFrom_FlattensLangJsonNames(t *testing.T) {
 
 	require.NotNil(t, described.ResourceName)
 	require.NotNil(t, described.ActionName)
-	assert.Equal(t, "IAM User", *described.ResourceName)
-	assert.Equal(t, "Read", *described.ActionName)
+	assert.Equal(t, "Người dùng IAM", *described.ResourceName)
+	assert.Equal(t, "Xem", *described.ActionName)
 }
 
 func TestDescribedEntitlementFrom_MissingEdgeLeavesNameNil(t *testing.T) {

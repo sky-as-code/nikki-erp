@@ -3,7 +3,7 @@ CREATE TABLE "paymentinvoice_payment_methods" (
   "id" character varying NOT NULL,
   "code" character varying NULL,
   "adapter_code" character varying NULL,
-  "name" jsonb NULL,
+  "name" character varying NULL,
   "description" character varying NULL,
   "currency_id" character varying NULL,
   "min_amount" numeric NULL,

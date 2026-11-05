@@ -52,12 +52,6 @@ func TestEveryStatusAppearsInItsTable(t *testing.T) {
 			string(models.SalesOrderInvoiceStatusFailed),
 			string(models.SalesOrderInvoiceStatusCancelled),
 		}},
-		{"voucher redemption", voucherRedemptionTransitions, []string{
-			string(models.VoucherRedemptionStatusReserved),
-			string(models.VoucherRedemptionStatusRedeemed),
-			string(models.VoucherRedemptionStatusReleased),
-			string(models.VoucherRedemptionStatusReversed),
-		}},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -84,7 +78,6 @@ func TestEveryTransitionTargetIsAKnownStatus(t *testing.T) {
 		"payment":     paymentTransitions,
 		"fulfillment": fulfillmentTransitions,
 		"invoice":     invoiceTransitions,
-		"redemption":  voucherRedemptionTransitions,
 	}
 	for name, table := range tables {
 		for from, targets := range table {

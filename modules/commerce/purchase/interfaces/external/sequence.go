@@ -3,6 +3,7 @@ package external
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
+	itLang "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itSeq "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/sequence"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
@@ -31,6 +32,10 @@ const SequenceAlgorithmIncrement = itSeq.AlgorithmIncrement
 // behalf of a caller who need not hold settings access. A missing value is absent from the map; a
 // failed read is an error, never an empty map, so "could not read" is never taken for "not set".
 type OrgSettingsReaderExtService = coreSettings.OrgSettingsReader
+
+// OrgLanguage is the language an organization's defaults and generated names are written in: its
+// essential.system_language, else model.DefaultLanguageCode.
+var OrgLanguage = itLang.OrgLanguage
 
 // SequenceOperationKey names one NextValue call deterministically (see itSeq.OperationKey).
 var SequenceOperationKey = itSeq.OperationKey

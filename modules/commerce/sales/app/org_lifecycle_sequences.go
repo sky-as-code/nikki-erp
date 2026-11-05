@@ -27,7 +27,7 @@ type salesSequence struct {
 	nameVi    string
 }
 
-// salesSequences are the four series, one counter per organization each. The public reference is
+// salesSequences are the five series, one counter per organization each. The public reference is
 // pseudorandom so a code cannot be derived from its neighbours; Essential forces its padding to 0
 // and grows its length on its own.
 var salesSequences = []salesSequence{
@@ -39,6 +39,8 @@ var salesSequences = []salesSequence{
 		itExt.SequenceAlgorithmIncrement, "Sales bill number", "Số hóa đơn bán hàng"},
 	{salessettings.OrgSettingReturnNumberSequenceId, "sales.return", "RET",
 		itExt.SequenceAlgorithmIncrement, "Sales return number", "Số phiếu trả hàng"},
+	{salessettings.OrgSettingPromotionReferenceSequenceId, "sales.promotion", "KM",
+		itExt.SequenceAlgorithmIncrement, "Sales promotion reference", "Mã chương trình khuyến mãi"},
 }
 
 // upsertDefinitionCommand builds the registration of one series for one organization.
@@ -52,7 +54,7 @@ func (this salesSequence) upsertDefinitionCommand(orgId model.Id) itExt.UpsertSe
 		OrgId:              &orgId,
 		OwnerModule:        modconstants.SalesModuleName,
 		Code:               this.code,
-		Name:               model.LangJson{"en-US": this.nameEn, "vi-VN": this.nameVi},
+		Names:              model.LangJson{"en-US": this.nameEn, "vi-VN": this.nameVi},
 		FormatOwner:        util.ToPtr(sequenceFormatOwnerSystem),
 		Algorithm:          util.ToPtr(this.algorithm),
 		PrefixTemplate:     util.ToPtr(this.prefix),

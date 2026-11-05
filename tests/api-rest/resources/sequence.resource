@@ -63,7 +63,7 @@ Sequence Definition Body
     ${code}=    Unique Sequence Code
     ${name}=    Unique Display Name    Robot Sequence
     ${body}=    Evaluate
-    ...    {k: v for k, v in {'configuration_scope': 'org', 'org_id': $SEQ_ORG_ID, 'owner_module': 'robot', 'code': $code, 'name': {'en-US': $name}, **$overrides}.items() if v is not None}
+    ...    {k: v for k, v in {'configuration_scope': 'org', 'org_id': $SEQ_ORG_ID, 'owner_module': 'robot', 'code': $code, 'name': $name, **$overrides}.items() if v is not None}
     RETURN    ${body}
 
 Post Sequence Definition
@@ -108,7 +108,7 @@ Ensure Issued Sequence Definition
     Ensure Inventory Location Under Test
     Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Sequence Type
-    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name},'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
     ${transfer_id}    ${transfer_etag}=    Create Stock Transfer    ${type_id}
     ${transfer}=    GET On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}

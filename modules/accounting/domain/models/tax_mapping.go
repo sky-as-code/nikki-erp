@@ -54,12 +54,12 @@ func (this *TaxMapping) SetCode(v *string) {
 	this.GetFieldData().SetString(TaxMappingFieldCode, v)
 }
 
-func (this TaxMapping) GetName() *model.LangJson {
-	return this.GetFieldData().GetLangJson(TaxMappingFieldName)
+func (this TaxMapping) GetName() *string {
+	return this.GetFieldData().GetString(TaxMappingFieldName)
 }
 
-func (this *TaxMapping) SetName(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(TaxMappingFieldName, v)
+func (this *TaxMapping) SetName(v *string) {
+	this.GetFieldData().SetString(TaxMappingFieldName, v)
 }
 
 func (this TaxMapping) GetVersionNo() *int32 {

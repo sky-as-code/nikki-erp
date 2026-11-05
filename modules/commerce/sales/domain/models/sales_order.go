@@ -44,6 +44,8 @@ const (
 	SalesOrderFieldExternalReference            = "external_reference"
 	SalesOrderFieldIdempotencyKey               = "idempotency_key"
 	SalesOrderFieldStageVersion                 = "stage_version"
+	SalesOrderFieldPromotionCalcReference       = "promotion_calculation_reference"
+	SalesOrderFieldConfirmationRevision         = "confirmation_revision"
 	SalesOrderFieldInitialBillId                = "initial_bill_id"
 	SalesOrderFieldConfirmedAt                  = "confirmed_at"
 	SalesOrderFieldCompletedAt                  = "completed_at"

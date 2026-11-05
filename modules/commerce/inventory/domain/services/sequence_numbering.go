@@ -45,7 +45,7 @@ func baseSequenceCommand(orgId model.Id, code string, name model.LangJson) itExt
 		OrgId:              &orgId,
 		OwnerModule:        invconstants.InventoryModuleName,
 		Code:               code,
-		Name:               name,
+		Names:              name,
 		Padding:            util.ToPtr(sequencePadding),
 		Increment:          util.ToPtr(sequenceStep),
 		InitialValue:       util.ToPtr(sequenceFirstNumber),

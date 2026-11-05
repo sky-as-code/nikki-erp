@@ -5,7 +5,9 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -38,13 +40,17 @@ var warehouseLocationFields = []string{
 func (this *WarehouseDomainServiceImpl) provisionLocations(
 	ctx corectx.Context, warehouse models.Warehouse,
 ) (dmodel.DynamicFields, error) {
+	lang, err := this.orgLanguage(ctx, warehouse)
+	if err != nil {
+		return nil, err
+	}
 	rootId, err := this.createManagedLocation(ctx, warehouse,
 		derefString(warehouse.GetCode()), models.InventoryLocationTypeGroup, "")
 	if err != nil {
 		return nil, err
 	}
 	stockId, err := this.createManagedLocation(ctx, warehouse,
-		warehouseStockLocationCode, models.InventoryLocationTypeInternal, rootId)
+		stockLocationNames.TextIn(lang), models.InventoryLocationTypeInternal, rootId)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +63,7 @@ func (this *WarehouseDomainServiceImpl) provisionLocations(
 
 	specs := append(incomingFlowLocations(derefString(warehouse.GetIncomingFlow())),
 		outgoingFlowLocations(derefString(warehouse.GetOutgoingFlow()))...)
-	if err := this.ensureFlowLocations(ctx, &warehouse, specs); err != nil {
+	if err := this.ensureFlowLocations(ctx, &warehouse, specs, lang); err != nil {
 		return nil, err
 	}
 	written := dmodel.DynamicFields{}
@@ -86,6 +92,13 @@ func (this *WarehouseDomainServiceImpl) createManagedLocation(
 		fields[models.InventoryLocationFieldParentLocationId] = parentId
 	}
 	return this.createSystemLocation(ctx, fields, true)
+}
+
+// orgLanguage is the language the warehouse's org writes generated names in.
+func (this *WarehouseDomainServiceImpl) orgLanguage(
+	ctx corectx.Context, warehouse models.Warehouse,
+) (model.LanguageCode, error) {
+	return itExt.OrgLanguage(ctx, this.settings, model.Id(derefId(warehouse.GetOrgId())))
 }
 
 // pointWarehouseAt writes location FKs onto the warehouse, and onto the caller's copy of it.

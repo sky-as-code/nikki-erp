@@ -15,7 +15,7 @@ import (
 //
 // The literal is the point: a resource added or removed without updating it is a deliberate
 // decision someone must confirm, not a number that drifts silently.
-const engineSchemaCount = 41
+const engineSchemaCount = 46
 
 // Every schema Sales serves appears exactly once. A schema listed twice would register its onion
 // and its routes twice; catching it here costs a millisecond instead of a container start.

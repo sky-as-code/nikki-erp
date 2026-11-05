@@ -34,8 +34,6 @@ type CancelOrderResult struct {
 	Status       string
 	CancelledAt  string
 
-	ReleasedVoucherIds []string
-
 	// ReleasedFulfillmentIds are the fulfillments whose held stock went back to the sellable pool.
 	// Empty for an order that reserved nothing, which is every order that never named a kiosk.
 	ReleasedFulfillmentIds []string
@@ -145,6 +143,12 @@ func cancelUnderLock(
 	fromStatus := stringOf(record, models.SalesOrderFieldStatus)
 	reason := opts.Reason
 
+	// Before anything is released or refunded: a coupon this order issued and another order already
+	// redeemed blocks the cancel (BR-V12).
+	if vErrs, err := assertSourceCouponsUnused(ctx, orderId); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+
 	if fromStatus != string(models.SalesOrderStatusDraft) {
 		outstanding, err := hasOutstandingAttempt(ctx, orderId)
 		if err != nil {
@@ -170,16 +174,8 @@ func cancelUnderLock(
 		}
 	}
 
-	// Vouchers go back BEFORE the status moves, so a failure to release leaves the order cancellable
-	// again rather than cancelled with a use still held against it.
-	released, err := releaseOrderVouchers(ctx, orderId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// The stock goes back BEFORE the status moves, for the same reason the vouchers do: a failure
-	// here leaves the order cancellable again rather than cancelled with goods still held against a
-	// sale nobody is going to complete.
+	// The stock goes back BEFORE the status moves: a failure here leaves the order cancellable again
+	// rather than cancelled with goods still held against a sale nobody is going to complete.
 	releasedFulfillments, err := ReleaseOrderFulfillments(ctx, orderId, reservations)
 	if err != nil {
 		return nil, nil, err
@@ -187,6 +183,9 @@ func cancelUnderLock(
 
 	cancelledAt := time.Now().UTC()
 	if err := stampCancelled(ctx, orderId, record, fromStatus, reason, normaliseNote(opts.CancellationNote), cancelledAt); err != nil {
+		if cErrs := commitRefusalOf(err); cErrs != nil {
+			return nil, cErrs, nil
+		}
 		return nil, nil, err
 	}
 
@@ -208,7 +207,6 @@ func cancelUnderLock(
 		SalesOrderId:           orderId,
 		Status:                 string(models.SalesOrderStatusCancelled),
 		CancelledAt:            cancelledAt.Format(time.RFC3339),
-		ReleasedVoucherIds:     released,
 		ReleasedFulfillmentIds: releasedFulfillments,
 		Pending:                pendingCancelSteps(fromStatus, reservations),
 		RefundRequestId:        refundId,
@@ -400,41 +398,6 @@ func assertCancellableWith(record dmodel.DynamicFields, opts CancelOrderOptions)
 	return nil
 }
 
-// releaseOrderVouchers hands back every use this order was holding. Only RESERVED redemptions:
-// a redeemed one belongs to a confirmed sale, and a released one is already given back, so
-// releasing it twice would credit a use the code never lost.
-func releaseOrderVouchers(ctx corectx.Context, orderId string) ([]string, error) {
-	redemptions, err := searchBy(ctx,
-		models.SalesVoucherRedemptionSchemaName,
-		models.SalesVoucherRedemptionFieldSalesOrderId, orderId)
-	if err != nil {
-		return nil, err
-	}
-
-	released := make([]string, 0, len(redemptions))
-	for _, record := range redemptions {
-		if stringOf(record, models.SalesVoucherRedemptionFieldStatus) !=
-			string(models.VoucherRedemptionStatusReserved) {
-			continue
-		}
-
-		redemptionId := stringOf(record, models.SalesVoucherRedemptionFieldId)
-		vErrs, err := SettleRedemption(ctx, redemptionId,
-			string(models.VoucherRedemptionStatusReleased))
-		if err != nil {
-			return nil, err
-		}
-		if vErrs != nil {
-			// A release the transition table refuses means the row moved under us despite the lock. Not
-			// fatal: the use is not held by a reservation that is no longer reserved.
-			continue
-		}
-		released = append(released,
-			stringOf(record, models.SalesVoucherRedemptionFieldVoucherCodeId))
-	}
-	return released, nil
-}
-
 // stampCancelled moves the status and records why. The reason travels into the audit event rather
 // than onto the order, which would hold only the most recent answer. All three writes are ONE
 // transaction: an event announcing a cancellation that then rolled back would leave consumers
@@ -452,6 +415,11 @@ func stampCancelledInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields,
 	fromStatus, reason, note string, at time.Time,
 ) error {
+	// Promotions are reversed in the same transaction as the status: a cancel that rolls back
+	// leaves every use taken and every coupon live (BR-T07).
+	if err := reversePromotions(ctx, orderId, at); err != nil {
+		return err
+	}
 	orgId := stringOf(record, basemodel.FieldOrgId)
 	if err := WriteSalesAuditEvent(ctx, SalesAuditEntry{
 		SalesOrderId: orderId,

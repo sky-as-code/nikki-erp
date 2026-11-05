@@ -5,7 +5,7 @@ Documentation     Creating Warehouses. The first test saves the warehouse under 
 ...               is asserted here rather than in the location suite: the warehouse is what
 ...               makes them exist.
 Resource          resources/inventory.resource
-Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Inventory Org
+Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Inventory Org Language    vi-VN
 Test Tags         inventory    warehouse    create
 
 
@@ -40,14 +40,16 @@ The Root Location Is A Group Named After The Warehouse Code
 
 Creating A Warehouse Creates Its Stock Location
     [Documentation]    A warehouse with nowhere to hold stock could hold nothing, so an internal
-    ...    Stock location is created under the root with it and referenced by stock_location_id.
+    ...    Stock location is created under the root with it and referenced by stock_location_id. It is
+    ...    found through that FK, never by name: its name is written in the org language.
     ${root}=    Get Warehouse Root Location Id    ${WAREHOUSE_ID}
     ${stock}=    Get Warehouse Stock Location Id    ${WAREHOUSE_ID}
     Should Not Be Empty    ${stock}    msg=A warehouse must have a Stock location
 
     ${item}=    Get Location By Id    ${stock}
-    Should Be Equal    ${item}[name]    Stock
-    Should Be Equal    ${item}[canonical_name]    ${WAREHOUSE_CODE} / Stock
+    Should Be Equal    ${item}[name]    Tồn kho
+    ...    msg=Stock is named in the org language, which the suite setup pins to vi-VN
+    Should Be Equal    ${item}[canonical_name]    ${WAREHOUSE_CODE} / Tồn kho
     Should Be Equal    ${item}[parent_location_id]    ${root}
     Should Be Equal    ${item}[warehouse_id]    ${WAREHOUSE_ID}
     Should Be Equal    ${item}[location_type]    internal

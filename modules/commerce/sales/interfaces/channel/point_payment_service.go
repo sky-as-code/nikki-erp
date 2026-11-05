@@ -2,7 +2,6 @@ package channel
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
@@ -43,10 +42,10 @@ type PayableMethodsQuery struct {
 }
 
 type PointPaymentMethodData struct {
-	PaymentMethodId  string         `json:"payment_method_id"`
-	Code             string         `json:"code"`
-	Name             model.LangJson `json:"name,omitempty"`
-	PaymentProfileId string         `json:"payment_profile_id,omitempty"`
+	PaymentMethodId  string `json:"payment_method_id"`
+	Code             string `json:"code"`
+	Name             string `json:"name,omitempty"`
+	PaymentProfileId string `json:"payment_profile_id,omitempty"`
 
 	IsEnabled bool `json:"is_enabled"`
 
@@ -71,9 +70,9 @@ type PointPaymentMutationResult struct {
 }
 
 type PayableMethod struct {
-	Id   string         `json:"id"`
-	Code string         `json:"code"`
-	Name model.LangJson `json:"name,omitempty"`
+	Id   string `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name,omitempty"`
 }
 
 type PayableMethodsResult struct {

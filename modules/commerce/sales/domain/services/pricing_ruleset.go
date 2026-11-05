@@ -20,9 +20,9 @@ import (
 // is keyed by, so a level that comes back empty short-circuits the ones below it rather than
 // scanning a table for rows that cannot be reachable.
 //
-// Every read is scoped to the org. The sales point narrows pricelists further; promotions are not
-// narrowed here, because where a promotion applies is expressed as its own conditions and half-
-// evaluating a condition tree is worse than not starting.
+// Every read is scoped to the org. The sales point narrows pricelists further. Promotions do not
+// travel: the kiosk receives no promotion data, and Sales prices, confirms and cancels every kiosk
+// order itself (PROMO-013). The rule set has no promotion field.
 
 // NewPricingRuleSetExtService builds the port. It holds no state: every read goes through the
 // resource hub at call time, like the rest of this package.
@@ -60,9 +60,6 @@ func (this *pricingRuleSetExtServiceImpl) PricingRuleSetForPoint(
 		return nil, err
 	}
 	if err := loadComboRules(ctx, query.OrgId, &ruleSet); err != nil {
-		return nil, err
-	}
-	if err := loadPromotionRules(ctx, query.OrgId, &ruleSet); err != nil {
 		return nil, err
 	}
 
@@ -156,108 +153,6 @@ func loadComboRules(
 	return nil
 }
 
-// loadPromotionRules reads the programs and the four tables hanging off them, then the codes.
-//
-// Conditions hang off groups rather than off programs, so they are keyed by the group ids read one
-// level up; targets hang off conditions the same way. Walking the chain rather than reading each
-// table by org is what keeps a program deleted mid-read from contributing orphan rows.
-func loadPromotionRules(
-	ctx corectx.Context, orgId string, ruleSet *itCatalog.PricingRuleSet,
-) error {
-	programs, err := searchLiveRows(ctx, models.SalesPromotionProgramSchemaName, orgId, nil)
-	if err != nil {
-		return err
-	}
-
-	programIds := make([]string, 0, len(programs))
-	for _, program := range programs {
-		ruleSet.Programs = append(ruleSet.Programs, *models.NewSalesPromotionProgramFrom(program))
-		programIds = append(programIds, stringOf(program, models.SalesPromotionProgramFieldId))
-	}
-	if len(programIds) == 0 {
-		return nil
-	}
-
-	groups, err := searchLiveRows(ctx, models.SalesPromotionConditionGroupSchemaName, orgId,
-		inCondition(models.SalesPromotionConditionGroupFieldProgramId, programIds))
-	if err != nil {
-		return err
-	}
-	groupIds := make([]string, 0, len(groups))
-	for _, group := range groups {
-		ruleSet.ProgramConditionGroups = append(ruleSet.ProgramConditionGroups,
-			*models.NewSalesPromotionConditionGroupFrom(group))
-		groupIds = append(groupIds, stringOf(group, models.SalesPromotionConditionGroupFieldId))
-	}
-
-	if len(groupIds) > 0 {
-		conditions, err := searchLiveRows(ctx, models.SalesPromotionConditionSchemaName, orgId,
-			inCondition(models.SalesPromotionConditionFieldGroupId, groupIds))
-		if err != nil {
-			return err
-		}
-		conditionIds := make([]string, 0, len(conditions))
-		for _, condition := range conditions {
-			ruleSet.ProgramConditions = append(ruleSet.ProgramConditions,
-				*models.NewSalesPromotionConditionFrom(condition))
-			conditionIds = append(conditionIds, stringOf(condition, models.SalesPromotionConditionFieldId))
-		}
-
-		if len(conditionIds) > 0 {
-			targets, err := searchLiveRows(ctx, models.SalesPromotionConditionTargetSchemaName, orgId,
-				inCondition(models.SalesPromotionConditionTargetFieldConditionId, conditionIds))
-			if err != nil {
-				return err
-			}
-			for _, target := range targets {
-				ruleSet.ProgramConditionTargets = append(ruleSet.ProgramConditionTargets,
-					*models.NewSalesPromotionConditionTargetFrom(target))
-			}
-		}
-	}
-
-	rewards, err := searchLiveRows(ctx, models.SalesPromotionRewardSchemaName, orgId,
-		inCondition(models.SalesPromotionRewardFieldProgramId, programIds))
-	if err != nil {
-		return err
-	}
-	for _, reward := range rewards {
-		ruleSet.ProgramRewards = append(ruleSet.ProgramRewards,
-			*models.NewSalesPromotionRewardFrom(reward))
-	}
-
-	// Compatibility is a pairwise directive, so a row is only meaningful when BOTH programs
-	// travelled. Reading by one side and filtering on the other keeps a pair naming an archived
-	// program out, which would otherwise read to the caller as a denial against a program it has
-	// never heard of.
-	compatibilities, err := searchLiveRows(ctx, models.SalesPromotionCompatibilitySchemaName, orgId,
-		inCondition(models.SalesPromotionCompatibilityFieldProgramAId, programIds))
-	if err != nil {
-		return err
-	}
-	travelling := make(map[string]bool, len(programIds))
-	for _, id := range programIds {
-		travelling[id] = true
-	}
-	for _, pair := range compatibilities {
-		if !travelling[stringOf(pair, models.SalesPromotionCompatibilityFieldProgramBId)] {
-			continue
-		}
-		ruleSet.ProgramCompatibilities = append(ruleSet.ProgramCompatibilities,
-			*models.NewSalesPromotionCompatibilityFrom(pair))
-	}
-
-	codes, err := searchLiveRows(ctx, models.SalesVoucherCodeSchemaName, orgId,
-		inCondition(models.SalesVoucherCodeFieldProgramId, programIds))
-	if err != nil {
-		return err
-	}
-	for _, code := range codes {
-		ruleSet.VoucherCodes = append(ruleSet.VoucherCodes, *models.NewSalesVoucherCodeFrom(code))
-	}
-	return nil
-}
-
 // searchLiveRows reads every non-archived row of a schema in one org, optionally narrowed further.
 //
 // It pages to exhaustion rather than trusting one read: a busy organization's pricelist items and
@@ -278,10 +173,13 @@ func searchLiveRows(
 	}
 
 	graph := &dmodel.SearchGraph{}
-	graph.And(*dmodel.NewSearchNode().NewCondition(basemodel.FieldOrgId, dmodel.Equals, orgId))
+	// One And call: SearchGraph.And replaces the conditions of an earlier call, which silently
+	// dropped the org filter whenever an extra condition was given.
+	nodes := []dmodel.SearchNode{*dmodel.NewSearchNode().NewCondition(basemodel.FieldOrgId, dmodel.Equals, orgId)}
 	if extra != nil {
-		graph.And(*extra)
+		nodes = append(nodes, *extra)
 	}
+	graph.And(nodes...)
 
 	rows := make([]dmodel.DynamicFields, 0, model.MODEL_RULE_PAGE_MAX_SIZE)
 	for page := 0; page < maxRuleSetPages; page++ {

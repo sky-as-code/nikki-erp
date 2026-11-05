@@ -21,6 +21,17 @@ const (
 	PermissionActivate = "activate"
 )
 
+// Promotions and vouchers (BR §9.4). Activating and suspending a promotion reuse the lifecycle
+// codes above; duplicating is a create, and managing scope or a rule's selectors is an update of
+// the promotion. Generating a batch of codes and revoking one are powers of their own: either puts
+// money in or takes it out of customers' hands.
+const (
+	PermissionDuplicatePromotion = "create"
+	PermissionManagePromotion    = "update"
+	PermissionGenerateVouchers   = "generate"
+	PermissionRevokeVoucher      = "revoke"
+)
+
 // Order creation and repricing. Reprice reuses update because it rewrites the same figures an
 // ordinary edit would; confirm and cancel are their own codes because each is a state transition
 // that releases or commits stock and money.

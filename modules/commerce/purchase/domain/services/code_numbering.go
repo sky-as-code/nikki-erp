@@ -56,7 +56,7 @@ func (this CodeSequence) UpsertCommand(orgId model.Id) itExt.UpsertSequenceDefin
 		OrgId:              &orgId,
 		OwnerModule:        purconstants.PurchaseModuleName,
 		Code:               this.Code,
-		Name:               model.LangJson{"en-US": this.NameEn, "vi-VN": this.NameVi},
+		Names:              model.LangJson{"en-US": this.NameEn, "vi-VN": this.NameVi},
 		FormatOwner:        util.ToPtr(sequenceFormatOwnerSystem),
 		Algorithm:          util.ToPtr(itExt.SequenceAlgorithmIncrement),
 		PrefixTemplate:     util.ToPtr(this.Prefix),

@@ -260,21 +260,14 @@ func plainNameOf(row dmodel.DynamicFields, nameField string) *string {
 }
 
 // langJsonNameOf flattens a LangJson name to the one string ScopeName can hold. There is no
-// language on the request context here, so it cannot honour the reader's locale; it takes any
-// entry rather than returning nil, because a name in the wrong language still identifies the
-// scope better than a blank label does.
+// language on the request context here, so it takes the default one; a name in the wrong language
+// still identifies the scope better than a blank label does.
 func langJsonNameOf(row dmodel.DynamicFields, nameField string) *string {
 	lang := row.GetLangJson(nameField)
 	if lang == nil {
 		return nil
 	}
-	if text, ok := (*lang)[model.DefaultLanguageCode]; ok && text != "" {
-		return &text
-	}
-	for code, text := range *lang {
-		if code == model.LanguageCodeRef || text == "" {
-			continue
-		}
+	if text := lang.TextIn(model.DefaultLanguageCode); text != "" {
 		return &text
 	}
 	return nil

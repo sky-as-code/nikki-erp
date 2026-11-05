@@ -64,7 +64,7 @@ func TestLabelsAsCallerReadsTheRecordLabelInOneSearch(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{"r1": "Role one", "r2": "Role two"}, labels)
+	assert.Equal(t, map[string]string{"r1": "Role one", "r2": "Vai trò hai"}, labels)
 	require.Len(t, app.queries, 1, "one search for the whole id set")
 	query := app.queries[0]
 	assert.Equal(t, []string{basemodel.FieldId, "name"}, query[fieldNameFields])
@@ -101,6 +101,6 @@ func TestLabelTextPrefersTheCallerLanguage(t *testing.T) {
 	texts := model.LangJson{"en-US": "Role", "vi-VN": "Vai trò"}
 
 	assert.Equal(t, "Vai trò", labelText(texts, &vi))
-	assert.Equal(t, "Role", labelText(texts, nil))
+	assert.Equal(t, "Vai trò", labelText(texts, nil))
 	assert.Equal(t, "Rôle", labelText(map[string]any{"fr-FR": "Rôle"}, nil))
 }

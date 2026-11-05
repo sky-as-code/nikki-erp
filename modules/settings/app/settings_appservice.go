@@ -41,7 +41,23 @@ func (this *TenantSettingsAppServiceImpl) GetTenantSettings(
 	if cErr := assertPermission(ctx, actionRead, settingsRecordResource); cErr != nil {
 		return &it.GetSettingsResult{ClientErrors: *cErr}, nil
 	}
-	return this.settingsSvc.GetSettings(ctx, c.LevelTenant, c.OwnerTypeTenant, query)
+	result, err := this.settingsSvc.GetSettings(ctx, c.LevelTenant, c.OwnerTypeTenant, query)
+	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
+		return result, err
+	}
+	if !hasPermission(ctx, actionUpdate, settingsRecordResource) {
+		markReadOnly(result.Data.Items)
+	}
+	return result, nil
+}
+
+// markReadOnly reports every item uneditable to a caller who may read the tenant's settings but not
+// write them. The domain service answers for the tenant owner, which may change anything; whether
+// this caller is that owner's administrator is an authorization question, so it is settled here.
+func markReadOnly(items []it.SettingItem) {
+	for i := range items {
+		items[i].Editable = false
+	}
 }
 
 func (this *TenantSettingsAppServiceImpl) SetTenantSettings(

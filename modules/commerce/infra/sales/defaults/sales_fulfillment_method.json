@@ -2,8 +2,8 @@
 	{
 		"$alias": "fulfillment_method_kiosk_direct_auto_refund",
 		"code": "KIOSK-DIRECT-AUTO-REFUND",
-		"name": "Kiosk Direct - Auto Refund",
-		"description": "A walk-up sale at the machine itself. The machine may retry a jammed dispense as often as it can; whatever never comes out is refunded without asking, because there is no identified customer to ask.",
+		"name": {"en-US": "Kiosk Direct - Auto Refund", "vi-VN": "Kiosk trực tiếp - Tự động hoàn tiền"},
+		"description": {"en-US": "A walk-up sale at the machine itself. The machine may retry a jammed dispense as often as it can; whatever never comes out is refunded without asking, because there is no identified customer to ask.", "vi-VN": "Bán trực tiếp tại máy cho khách vãng lai. Máy có thể thử lại lần xuất hàng bị kẹt nhiều lần nhất có thể; hàng nào không ra được sẽ được hoàn tiền mà không cần hỏi, vì không có khách hàng định danh để hỏi."},
 		"fulfillment_type": "kiosk_dispense",
 		"initial_target_selection": "current_sales_outlet",
 		"max_attempts": 1,
@@ -15,8 +15,8 @@
 	{
 		"$alias": "fulfillment_method_kiosk_direct_authenticated",
 		"code": "KIOSK-DIRECT-AUTHENTICATED",
-		"name": "Kiosk Direct - Customer Controlled",
-		"description": "A sale at the machine by an identified customer. Nothing is refunded automatically: the entitlement is kept so the customer may try another machine or ask for their money back.",
+		"name": {"en-US": "Kiosk Direct - Customer Controlled", "vi-VN": "Kiosk trực tiếp - Khách hàng tự điều khiển"},
+		"description": {"en-US": "A sale at the machine by an identified customer. Nothing is refunded automatically: the entitlement is kept so the customer may try another machine or ask for their money back.", "vi-VN": "Bán tại máy cho khách hàng đã định danh. Không tự động hoàn tiền: quyền nhận hàng được giữ lại để khách có thể thử máy khác hoặc yêu cầu hoàn tiền."},
 		"fulfillment_type": "kiosk_dispense",
 		"initial_target_selection": "current_sales_outlet",
 		"failure_action": "customer_action_required",
@@ -28,8 +28,8 @@
 	{
 		"$alias": "fulfillment_method_kiosk_pickup_selected",
 		"code": "KIOSK-PICKUP-SELECTED",
-		"name": "Kiosk Pickup - Customer Selected",
-		"description": "An order raised away from the machine and collected at a kiosk the customer chose. The target cannot be inferred from where the order was created, so one must be named before it is confirmed.",
+		"name": {"en-US": "Kiosk Pickup - Customer Selected", "vi-VN": "Nhận hàng tại kiosk - Khách hàng chọn"},
+		"description": {"en-US": "An order raised away from the machine and collected at a kiosk the customer chose. The target cannot be inferred from where the order was created, so one must be named before it is confirmed.", "vi-VN": "Đơn hàng tạo ngoài máy và nhận tại kiosk do khách hàng chọn. Không thể suy ra kiosk nhận hàng từ nơi tạo đơn, nên phải chỉ định kiosk trước khi xác nhận đơn."},
 		"fulfillment_type": "kiosk_dispense",
 		"initial_target_selection": "customer_selected_outlet",
 		"failure_action": "customer_action_required",

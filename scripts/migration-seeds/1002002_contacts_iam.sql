@@ -37,10 +37,10 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M1C0N7ACTS00000000000001', jsonb_build_object('en-US', 'Contacts - Party', 'vi-VN', 'Danh bạ - Đối tác'), 'contacts_party', 'People and organizations the business deals with', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS00000000000002', jsonb_build_object('en-US', 'Contacts - Communication Channel', 'vi-VN', 'Danh bạ - Kênh liên lạc'), 'contacts_comm_channel', 'Ways of reaching a party: phone, email, postal address', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS00000000000003', jsonb_build_object('en-US', 'Contacts - Party Relationship', 'vi-VN', 'Danh bạ - Quan hệ đối tác'), 'contacts_relationship', 'Directed links between two parties', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS0000000000000K', jsonb_build_object('en-US', 'Contacts - Vendor Profile', 'vi-VN', 'Danh bạ - Hồ sơ nhà cung cấp'), 'contacts_vendor_profile', 'Supplier-specific terms of a party: status, payment terms, lead time', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1C0N7ACTS00000000000001', jsonb_build_object('en-US', 'Contacts - Party', 'vi-VN', 'Danh bạ - Đối tác'), 'contacts_party', 'Cá nhân và tổ chức mà doanh nghiệp giao dịch', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS00000000000002', jsonb_build_object('en-US', 'Contacts - Communication Channel', 'vi-VN', 'Danh bạ - Kênh liên lạc'), 'contacts_comm_channel', 'Các cách liên lạc với đối tác: điện thoại, email, địa chỉ bưu chính', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS00000000000003', jsonb_build_object('en-US', 'Contacts - Party Relationship', 'vi-VN', 'Danh bạ - Quan hệ đối tác'), 'contacts_relationship', 'Liên kết có hướng giữa hai đối tác', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS0000000000000K', jsonb_build_object('en-US', 'Contacts - Vendor Profile', 'vi-VN', 'Danh bạ - Hồ sơ nhà cung cấp'), 'contacts_vendor_profile', 'Điều khoản riêng của đối tác với vai trò nhà cung cấp: trạng thái, điều khoản thanh toán, thời gian giao hàng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -54,25 +54,25 @@ BEGIN
 		('01M1C0N7ACTS00000000000005', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1C0N7ACTS00000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS00000000000006', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1C0N7ACTS00000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS00000000000007', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1C0N7ACTS00000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS00000000000008', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a party so it is hidden from the working set', '01M1C0N7ACTS00000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS00000000000008', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ đối tác để ẩn khỏi danh sách đang sử dụng', '01M1C0N7ACTS00000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Communication Channel
 		('01M1C0N7ACTS00000000000009', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000A', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000B', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000C', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS0000000000000D', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a communication channel', '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS0000000000000D', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ kênh liên lạc', '01M1C0N7ACTS00000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Relationship
 		('01M1C0N7ACTS0000000000000E', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000F', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000G', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000H', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS0000000000000J', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a party relationship', '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS0000000000000J', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ quan hệ đối tác', '01M1C0N7ACTS00000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Vendor Profile
 		('01M1C0N7ACTS0000000000000M', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000N', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000P', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M1C0N7ACTS0000000000000Q', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS0000000000000R', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a vendor profile so it cannot be selected for new orders', '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1C0N7ACTS0000000000000R', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ hồ sơ nhà cung cấp để không thể chọn cho đơn hàng mới', '01M1C0N7ACTS0000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

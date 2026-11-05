@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
@@ -9,14 +10,17 @@ import (
 // flow change provisions locations while leaving every existing quant and transfer alone.
 
 // systemLocationSpec describes one stop of a warehouse flow, a location the warehouse creates for
-// itself under its root. Field is the warehouse FK that names it; Name is its initial name.
+// itself under its root. Code names the stop in flow legs and never changes; Names are the
+// candidate translations of the created location's name, picked once in the org language; Field is
+// the warehouse FK that holds it.
 type systemLocationSpec struct {
-	Name  string
+	Code  string
+	Names model.LangJson
 	Field string
 }
 
-// The stops' names, which the flow legs also use to name them. "Stock" is the managed child of the
-// root where goods live; it exists whatever the flows.
+// The stops' codes, which the flow legs use to name them. "Stock" is the managed child of the root
+// where goods live; it exists whatever the flows.
 const (
 	warehouseStockLocationCode   = "Stock"
 	warehouseInputLocationCode   = "Input"
@@ -26,10 +30,28 @@ const (
 )
 
 var (
-	inputStop   = systemLocationSpec{Name: warehouseInputLocationCode, Field: models.WarehouseFieldReceivingLocationId}
-	qualityStop = systemLocationSpec{Name: warehouseQualityLocationCode, Field: models.WarehouseFieldQualityLocationId}
-	packingStop = systemLocationSpec{Name: warehousePackingLocationCode, Field: models.WarehouseFieldPackingLocationId}
-	outputStop  = systemLocationSpec{Name: warehouseOutputLocationCode, Field: models.WarehouseFieldOutputLocationId}
+	stockLocationNames = model.LangJson{model.LanguageCodeEnUs: "Stock", model.LanguageCodeViVn: "Tồn kho"}
+
+	inputStop = systemLocationSpec{
+		Code:  warehouseInputLocationCode,
+		Names: model.LangJson{model.LanguageCodeEnUs: "Input", model.LanguageCodeViVn: "Khu nhập hàng"},
+		Field: models.WarehouseFieldReceivingLocationId,
+	}
+	qualityStop = systemLocationSpec{
+		Code:  warehouseQualityLocationCode,
+		Names: model.LangJson{model.LanguageCodeEnUs: "Quality Control", model.LanguageCodeViVn: "Kiểm tra chất lượng"},
+		Field: models.WarehouseFieldQualityLocationId,
+	}
+	packingStop = systemLocationSpec{
+		Code:  warehousePackingLocationCode,
+		Names: model.LangJson{model.LanguageCodeEnUs: "Packing", model.LanguageCodeViVn: "Đóng gói"},
+		Field: models.WarehouseFieldPackingLocationId,
+	}
+	outputStop = systemLocationSpec{
+		Code:  warehouseOutputLocationCode,
+		Names: model.LangJson{model.LanguageCodeEnUs: "Output", model.LanguageCodeViVn: "Khu xuất hàng"},
+		Field: models.WarehouseFieldOutputLocationId,
+	}
 )
 
 // incomingFlowLocations lists the stops goods make on the way in, beyond Stock itself.
@@ -56,14 +78,14 @@ func outgoingFlowLocations(flow string) []systemLocationSpec {
 	}
 }
 
-// stopField names the warehouse FK holding a stop named in a flow leg: "Stock" is the stock
+// stopField names the warehouse FK holding a stop a flow leg names by code: "Stock" is the stock
 // location, any other stop is looked up in the three-step flows, which name every stop there is.
-func stopField(stopName string) string {
-	if stopName == warehouseStockLocationCode {
+func stopField(stopCode string) string {
+	if stopCode == warehouseStockLocationCode {
 		return models.WarehouseFieldStockLocationId
 	}
 	for _, spec := range []systemLocationSpec{inputStop, qualityStop, packingStop, outputStop} {
-		if spec.Name == stopName {
+		if spec.Code == stopCode {
 			return spec.Field
 		}
 	}
@@ -93,8 +115,8 @@ func ResolveIncomingFlow(flow string) []FlowLeg {
 	from := FlowEndpointVendor
 	legs := make([]FlowLeg, 0, len(stops)+1)
 	for _, stop := range stops {
-		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Name})
-		from = stop.Name
+		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Code})
+		from = stop.Code
 	}
 	return append(legs, FlowLeg{FromCode: from, ToCode: warehouseStockLocationCode})
 }
@@ -106,8 +128,8 @@ func ResolveOutgoingFlow(flow string) []FlowLeg {
 	from := warehouseStockLocationCode
 	legs := make([]FlowLeg, 0, len(stops)+1)
 	for _, stop := range stops {
-		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Name})
-		from = stop.Name
+		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Code})
+		from = stop.Code
 	}
 	return append(legs, FlowLeg{FromCode: from, ToCode: FlowEndpointCustomer})
 }
@@ -123,12 +145,12 @@ func obsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool
 
 	stillNeeded := map[string]bool{}
 	for _, spec := range lister(nextFlow) {
-		stillNeeded[spec.Name] = true
+		stillNeeded[spec.Code] = true
 	}
 
 	obsolete := make([]systemLocationSpec, 0)
 	for _, spec := range lister(previousFlow) {
-		if !stillNeeded[spec.Name] {
+		if !stillNeeded[spec.Code] {
 			obsolete = append(obsolete, spec)
 		}
 	}

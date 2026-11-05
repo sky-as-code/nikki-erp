@@ -1,0 +1,302 @@
+{
+	"name": "sales_promotion_application",
+	"label": "sales_promotion_application.label",
+	"table_name": "sales_promotion_applications",
+	"should_build_db": true,
+	"partial_uniques_strict": [
+		{
+			"index_name": "sls_promo_apps_tid_order_promo_cfm",
+			"not_null_fields": [
+				"order_id",
+				"promotion_id"
+			],
+			"nullable_field": "is_confirmed"
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_promo_apps_tid_promo_status",
+			"fields": [
+				"promotion_id",
+				"status"
+			]
+		},
+		{
+			"index_name": "sls_promo_apps_tid_order",
+			"fields": [
+				"order_id"
+			]
+		},
+		{
+			"index_name": "sls_promo_apps_tid_voucher",
+			"fields": [
+				"voucher_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The confirmed order that received the benefit."
+			}
+		},
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The promotion applied."
+			}
+		},
+		{
+			"name": "reward_id",
+			"label": "fields.reward_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The reward granted."
+			}
+		},
+		{
+			"name": "voucher_id",
+			"label": "fields.voucher_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The voucher used; null for a promotion that needs none."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"confirmed",
+					"reversed"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "confirmed",
+			"metadata": {
+				"track_history": true
+			},
+			"description": {
+				"en-US": "confirmed at Confirm, reversed at Cancel (BR-T07). Reversal is atomic with releasing the use."
+			}
+		},
+		{
+			"name": "is_confirmed",
+			"label": "fields.is_confirmed",
+			"data_type": "boolean",
+			"metadata": {
+				"server_assigned": true
+			},
+			"description": {
+				"en-US": "True while status is confirmed and null once reversed: the nullable column of the partial unique allowing one confirmed application per order and promotion while keeping reversed history (BR 8.11). Server-assigned."
+			}
+		},
+		{
+			"name": "confirmation_revision",
+			"label": "fields.confirmation_revision",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order's confirmation_revision when this was recorded (BR 8.8)."
+			}
+		},
+		{
+			"name": "config_version",
+			"label": "fields.config_version",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 1000000000
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The promotion's config_version at Confirm."
+			}
+		},
+		{
+			"name": "qualification_snapshot",
+			"label": "fields.qualification_snapshot",
+			"data_type": "jsonmap",
+			"no_update": true,
+			"description": {
+				"en-US": "What qualified: rule, lines counted, quantities and UoM, amount and tax basis, channel/point/pricelist, currency, customer, evaluation time (BR 8.8)."
+			}
+		},
+		{
+			"name": "reward_snapshot",
+			"label": "fields.reward_snapshot",
+			"data_type": "jsonmap",
+			"no_update": true,
+			"description": {
+				"en-US": "What was granted: promotion name and reference, reward type, value, cap, resolved selectors, description, sets, gift variant/UoM/quantity (BR 8.8)."
+			}
+		},
+		{
+			"name": "discount_untaxed_amount",
+			"label": "fields.discount_untaxed_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Untaxed discount granted. Zero for a gift."
+			}
+		},
+		{
+			"name": "tax_reduction_amount",
+			"label": "fields.tax_reduction_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Tax difference before and after the discount."
+			}
+		},
+		{
+			"name": "discount_total_amount",
+			"label": "fields.discount_total_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "discount_untaxed_amount + tax_reduction_amount."
+			}
+		},
+		{
+			"name": "applied_at",
+			"label": "fields.applied_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When Confirm recorded it."
+			}
+		},
+		{
+			"name": "reversed_at",
+			"label": "fields.reversed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When Cancel reversed it."
+			}
+		},
+		{
+			"name": "reversal_reason",
+			"label": "fields.reversal_reason",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 200
+			},
+			"description": {
+				"en-US": "Why it was reversed."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": {
+				"en-US": "Order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"order_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "reward",
+			"label": {
+				"en-US": "Reward"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion_reward",
+			"key_map": {
+				"reward_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "voucher",
+			"label": {
+				"en-US": "Voucher"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_voucher",
+			"key_map": {
+				"voucher_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	],
+	"edges_from": [
+		{
+			"edge": "allocations",
+			"label": {
+				"en-US": "Allocations"
+			},
+			"existing": {
+				"src_schema": "sales_promotion_allocation",
+				"src_edge": "application"
+			}
+		}
+	]
+}

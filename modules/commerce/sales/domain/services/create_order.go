@@ -383,10 +383,11 @@ func findOrderByIdempotencyKey(
 	}
 
 	graph := &dmodel.SearchGraph{}
-	graph.And(*dmodel.NewSearchNode().
-		NewCondition(models.SalesOrderFieldSalesChannelId, dmodel.Equals, channelId))
-	graph.And(*dmodel.NewSearchNode().
-		NewCondition(models.SalesOrderFieldIdempotencyKey, dmodel.Equals, key))
+	// One And call: SearchGraph.And replaces the conditions of an earlier call.
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(models.SalesOrderFieldSalesChannelId, dmodel.Equals, channelId),
+		*dmodel.NewSearchNode().NewCondition(models.SalesOrderFieldIdempotencyKey, dmodel.Equals, key),
+	)
 
 	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,

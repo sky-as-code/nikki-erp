@@ -40,8 +40,9 @@ type OrgLifecycleParam struct {
 	Mapping           itTax.TaxMappingDomainService
 	MappingLine       itTax.TaxMappingLineDomainService
 
-	CurrencySvc itExt.CurrencyExtService
-	SettingsSvc itExt.OrgSettingsSeedExtService
+	CurrencySvc    itExt.CurrencyExtService
+	SettingsSvc    itExt.OrgSettingsSeedExtService
+	SettingsReader itExt.OrgSettingsReaderExtService
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -63,10 +64,14 @@ func (this *OrgLifecycleAppServiceImpl) writeOrder() []dynamicresource.CrudDomai
 }
 
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
+	lang, err := itExt.OrgLanguage(ctx, this.param.SettingsReader, orgId)
+	if err != nil {
+		return err
+	}
 	return dynamicresource.InTransaction(ctx, this.param.Tax.Repository(), func(tranxCtx corectx.Context) error {
 		aliases := defaults.NewAliases()
 		for _, svc := range this.writeOrder() {
-			rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name())
+			rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name(), lang)
 			if err != nil {
 				return err
 			}

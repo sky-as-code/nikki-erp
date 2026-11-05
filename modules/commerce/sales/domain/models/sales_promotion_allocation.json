@@ -1,0 +1,209 @@
+{
+	"name": "sales_promotion_allocation",
+	"label": "sales_promotion_allocation.label",
+	"table_name": "sales_promotion_allocations",
+	"should_build_db": true,
+	"search_indexes": [
+		{
+			"index_name": "sls_promo_allocs_tid_app",
+			"fields": [
+				"application_id"
+			]
+		},
+		{
+			"index_name": "sls_promo_allocs_tid_line",
+			"fields": [
+				"order_line_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "application_id",
+			"label": "fields.application_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The application this share belongs to."
+			}
+		},
+		{
+			"name": "order_line_id",
+			"label": "fields.order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The line receiving the share."
+			}
+		},
+		{
+			"name": "allocation_type",
+			"label": "fields.allocation_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"merchandise_discount",
+					"shipping_discount",
+					"free_product"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of benefit this share is (BR 8.9)."
+			}
+		},
+		{
+			"name": "eligible_quantity",
+			"label": "fields.eligible_quantity",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Quantity receiving the benefit, in uom_id."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Unit of eligible_quantity."
+			}
+		},
+		{
+			"name": "base_untaxed_amount",
+			"label": "fields.base_untaxed_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Untaxed value of the line left just before this benefit."
+			}
+		},
+		{
+			"name": "discount_untaxed_amount",
+			"label": "fields.discount_untaxed_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Untaxed discount allocated to the line; zero for free_product."
+			}
+		},
+		{
+			"name": "tax_reduction_amount",
+			"label": "fields.tax_reduction_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Tax difference caused by this share."
+			}
+		},
+		{
+			"name": "discount_total_amount",
+			"label": "fields.discount_total_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "discount_untaxed_amount + tax_reduction_amount."
+			}
+		},
+		{
+			"name": "calculation_sequence",
+			"label": "fields.calculation_sequence",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The order the engine applied this in, to replay the result."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+	"edges_to": [
+		{
+			"edge": "application",
+			"label": {
+				"en-US": "Application"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion_application",
+			"key_map": {
+				"application_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "order_line",
+			"label": {
+				"en-US": "Order line"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": {
+				"order_line_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "uom",
+			"label": {
+				"en-US": "Unit of measure"
+			},
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": {
+				"uom_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	]
+}

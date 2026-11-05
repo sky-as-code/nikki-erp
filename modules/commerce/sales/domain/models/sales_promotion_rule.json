@@ -1,0 +1,184 @@
+{
+	"name": "sales_promotion_rule",
+	"label": "sales_promotion_rule.label",
+	"table_name": "sales_promotion_rules",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": [
+		"name"
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_promo_rules_tid_promo_phase",
+			"fields": [
+				"promotion_id",
+				"phase"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The promotion this rule qualifies orders for. Immutable."
+			}
+		},
+		{
+			"name": "phase",
+			"label": "fields.phase",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"apply",
+					"issue"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "apply",
+			"description": {
+				"en-US": "apply qualifies the order that receives the reward; issue qualifies the source order of a next_order_coupon and is valid for that type only (BR-V08). Rules of one phase are ORed (BR-C04)."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 200
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Readable name, used to explain why an order qualified."
+			}
+		},
+		{
+			"name": "min_quantity",
+			"label": "fields.min_quantity",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Minimum eligible quantity, summed in each product's base UoM (BR-C07), or in qualification_uom_id for buy_x_get_y, where it must be above zero and is the set size X (BR-C08)."
+			}
+		},
+		{
+			"name": "qualification_uom_id",
+			"label": "fields.qualification_uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The unit buy_x_get_y counts its sets in; required for that type and null for every other (BR §8.4)."
+			}
+		},
+		{
+			"name": "min_amount",
+			"label": "fields.min_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Minimum eligible amount in the promotion's currency, on the basis amount_tax_basis names (BR-C06)."
+			}
+		},
+		{
+			"name": "amount_tax_basis",
+			"label": "fields.amount_tax_basis",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"tax_included",
+					"tax_excluded"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "tax_excluded",
+			"description": {
+				"en-US": "Whether min_amount compares against the eligible lines with or without their tax (BR-C06)."
+			}
+		},
+		{
+			"name": "has_mixed_uom",
+			"label": "fields.has_mixed_uom",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "function",
+				"is_stored": false,
+				"function": "sales.promotion_rule_has_mixed_uom"
+			},
+			"description": {
+				"en-US": "True when the rule's product selectors span more than one UoM category, so its quantity threshold adds units of different kinds (BR-C07 warning). A warning only: the write is not refused."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
+		"core.basemodel.versioned_model"
+	],
+	"edges_to": [
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "qualification_uom",
+			"label": {
+				"en-US": "Qualification unit"
+			},
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": {
+				"qualification_uom_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	],
+	"edges_from": [
+		{
+			"edge": "products",
+			"label": {
+				"en-US": "Products"
+			},
+			"existing": {
+				"src_schema": "sales_promotion_rule_product",
+				"src_edge": "rule"
+			}
+		},
+		{
+			"edge": "categories",
+			"label": {
+				"en-US": "Categories"
+			},
+			"existing": {
+				"src_schema": "sales_promotion_rule_category",
+				"src_edge": "rule"
+			}
+		}
+	]
+}

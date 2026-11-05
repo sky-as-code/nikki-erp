@@ -105,11 +105,15 @@ var (
 
 func readRouteSource(t *testing.T) string {
 	t.Helper()
-	content, err := os.ReadFile(filepath.Join("index.go"))
-	if err != nil {
-		t.Fatalf("the route table must be readable from the test: %v", err)
+	source := ""
+	for _, name := range []string{"index.go", "promotion_routes.go", "voucher_routes.go"} {
+		content, err := os.ReadFile(filepath.Join(name))
+		if err != nil {
+			t.Fatalf("the route table must be readable from the test: %v", err)
+		}
+		source += string(content)
 	}
-	return string(content)
+	return source
 }
 
 // splitInitFuncs cuts the file into one entry per initXxxV1 function. Crude but sufficient: each

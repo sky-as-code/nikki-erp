@@ -44,14 +44,9 @@ func InitRestfulHandlers() error {
 		v1.NewSalesReturnRest,
 		v1.NewSalesReturnLineRest,
 		v1.NewSalesRefundPaymentRest,
-		v1.NewSalesPromotionProgramRest,
-		v1.NewSalesPromotionConditionGroupRest,
-		v1.NewSalesPromotionConditionRest,
-		v1.NewSalesPromotionConditionTargetRest,
+		v1.NewSalesPromotionRest,
+		v1.NewSalesPromotionRuleRest,
 		v1.NewSalesPromotionRewardRest,
-		v1.NewSalesPromotionCompatibilityRest,
-		v1.NewSalesVoucherCodeRest,
-		v1.NewSalesVoucherRedemptionRest,
 		v1.NewSalesQuotationRest,
 		v1.NewSalesQuotationLineRest,
 		v1.NewSalesFiscalRequestRest,
@@ -93,14 +88,11 @@ func initSalesV1() error {
 			initSalesReturnV1(routeV1),
 			initSalesReturnLineV1(routeV1),
 			initSalesRefundPaymentV1(routeV1),
-			initSalesPromotionProgramV1(routeV1),
-			initSalesPromotionConditionGroupV1(routeV1),
-			initSalesPromotionConditionV1(routeV1),
-			initSalesPromotionConditionTargetV1(routeV1),
+			initSalesPromotionV1(routeV1),
+			initSalesPromotionRuleV1(routeV1),
 			initSalesPromotionRewardV1(routeV1),
-			initSalesPromotionCompatibilityV1(routeV1),
-			initSalesVoucherCodeV1(routeV1),
-			initSalesVoucherRedemptionV1(routeV1),
+			initSalesVoucherV1(routeV1),
+			initSalesPromotionReadOnlyV1(routeV1),
 			initSalesQuotationV1(routeV1),
 			initSalesQuotationLineV1(routeV1),
 			initSalesFiscalRequestV1(routeV1),
@@ -267,6 +259,17 @@ func initSalesOrderV1(route *echo.Group) error {
 			}).
 			AddRoute(dynamicresource.RouteDefinition{
 				Path: ":id/apply_voucher", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ApplyVoucher,
+			}).
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/remove_voucher", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.RemoveVoucher,
+			}).
+			AddRoute(dynamicresource.RouteDefinition{
+				Path:       ":id/select_promotion_reward",
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.SelectPromotionReward,
+			}).
+			AddRoute(dynamicresource.RouteDefinition{
+				Path:       ":id/preview_promotions",
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.PreviewPromotions,
 			}).
 			AddRoute(dynamicresource.RouteDefinition{
 				Path: ":id/explain_price", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ExplainPrice,
@@ -502,70 +505,6 @@ func initSalesReturnLineV1(route *echo.Group) error {
 func initSalesRefundPaymentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesRefundPaymentRest) error {
 		return dynamicresource.NewRestEngine(models.SalesRefundPaymentSchemaName, rest).
-			AddCrudRoutes(readOnlyRoutes()...).
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionProgramV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionProgramRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionProgramSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionConditionGroupV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionConditionGroupRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionConditionGroupSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionConditionV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionConditionRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionConditionSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionConditionTargetV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionConditionTargetRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionConditionTargetSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionRewardV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionRewardRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionRewardSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesPromotionCompatibilityV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesPromotionCompatibilityRest) error {
-		return dynamicresource.NewRestEngine(models.SalesPromotionCompatibilitySchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesVoucherCodeV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesVoucherCodeRest) error {
-		return dynamicresource.NewRestEngine(models.SalesVoucherCodeSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
-	})
-}
-
-func initSalesVoucherRedemptionV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.SalesVoucherRedemptionRest) error {
-		return dynamicresource.NewRestEngine(models.SalesVoucherRedemptionSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})

@@ -27,8 +27,13 @@ const (
 	RefPrefix = "@"
 )
 
-// Load reads `<schemaName>.json` from fsys.
-func Load(fsys fs.FS, schemaName string) ([]dmodel.DynamicFields, error) {
+// Load reads `<schemaName>.json` from fsys, written in lang.
+//
+// A row may give a single-language (string) field its candidate translations as an object
+// `{"vi-VN": "...", "en-US": "..."}`; it collapses to the text in lang (LangJson.TextIn). A LangJson
+// field keeps the object. The field types come from the registered schema; a schema that is not
+// registered leaves every value as written.
+func Load(fsys fs.FS, schemaName string, lang model.LanguageCode) ([]dmodel.DynamicFields, error) {
 	content, err := fs.ReadFile(fsys, schemaName+".json")
 	if err != nil {
 		return nil, errors.Wrapf(err, "defaults: reading %s.json", schemaName)
@@ -37,7 +42,35 @@ func Load(fsys fs.FS, schemaName string) ([]dmodel.DynamicFields, error) {
 	if err := json.Unmarshal(content, &rows); err != nil {
 		return nil, errors.Wrapf(err, "defaults: parsing %s.json", schemaName)
 	}
+	schema := dmodel.GetSchema(schemaName)
+	if schema == nil {
+		return rows, nil
+	}
+	for _, row := range rows {
+		localizeStrings(schema, row, lang)
+	}
 	return rows, nil
+}
+
+func localizeStrings(schema *dmodel.ModelSchema, row dmodel.DynamicFields, lang model.LanguageCode) {
+	for key, value := range row {
+		translations, isObject := value.(map[string]any)
+		if !isObject {
+			continue
+		}
+		field, found := schema.Field(key)
+		if !found || field.DataType() == nil || field.DataType().IsArray() ||
+			field.DataType().String() != dmodel.FieldDataTypeNameString {
+			continue
+		}
+		texts := make(model.LangJson, len(translations))
+		for code, text := range translations {
+			if str, isText := text.(string); isText {
+				texts[code] = str
+			}
+		}
+		row[key] = texts.TextIn(lang)
+	}
 }
 
 // Aliases maps each alias to the id its row was created with.

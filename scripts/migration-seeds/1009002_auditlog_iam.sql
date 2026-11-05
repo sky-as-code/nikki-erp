@@ -21,7 +21,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M9AD1TAC0000000000000001', jsonb_build_object('en-US', 'Audit Log - Action', 'vi-VN', 'Nhật ký hệ thống - Nhật ký hành động'), 'auditlog_action', 'One audited action on a record: who did it, when, and which fields changed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M9AD1TAC0000000000000001', jsonb_build_object('en-US', 'Audit Log - Action', 'vi-VN', 'Nhật ký hệ thống - Nhật ký hành động'), 'auditlog_action', 'Một hành động được ghi nhật ký trên bản ghi: ai thực hiện, khi nào và trường nào thay đổi', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -30,7 +30,7 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M9AD1TAC0000000000000011', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read audit entries', '01M9AD1TAC0000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M9AD1TAC0000000000000011', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem nhật ký kiểm toán', '01M9AD1TAC0000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

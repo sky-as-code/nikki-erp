@@ -9,6 +9,7 @@ Library           Collections
 Resource          ${CURDIR}/../nikki_api/auth.resource
 Resource          ${CURDIR}/../nikki_api/assertions.resource
 Resource          ${CURDIR}/../nikki_api/data.resource
+Resource          ${CURDIR}/settings.resource
 
 
 *** Variables ***
@@ -55,6 +56,16 @@ Ensure Inventory Org
     Should Not Be Empty    ${items}
     ...    msg=No organization exists to own the Inventory fixtures; set ORG_ID in the environment
     Set Global Variable    ${INV_ORG_ID}    ${items}[0][id]
+
+Ensure Inventory Org Language
+    [Documentation]    Pins the org's Essential system_language, the language Inventory names what
+    ...    it creates in (a warehouse's Stock location, its flow stops). Left unset, the name depends on
+    ...    whatever an earlier suite or a person stored, so a suite asserting a name pins it first.
+    [Arguments]    ${language}=vi-VN
+    Ensure Inventory Org
+    ${items}=    Create List    ${{ {'name': 'system_language', 'value': $language} }}
+    ${resp}=    Set Settings At Level    ${SETTINGS_ORG_API}    ${items}    org_id=${INV_ORG_ID}
+    Response Status Should Be    ${resp}    200
 
 Unique Code
     [Documentation]    `code` is unique (per org on most of these models), so it carries the

@@ -41,6 +41,8 @@ var customPermissions = []string{
 	PermissionMarkBillingReady,
 	PermissionRevertBillingToDraft,
 	PermissionCancelBillingInstruction,
+	PermissionGenerateVouchers,
+	PermissionRevokeVoucher,
 }
 
 func TestCustomPermissionsAreSeeded(t *testing.T) {

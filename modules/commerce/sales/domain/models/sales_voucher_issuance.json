@@ -1,0 +1,120 @@
+{
+	"name": "sales_voucher_issuance",
+	"label": "sales_voucher_issuance.label",
+	"table_name": "sales_voucher_issuances",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sls_vchr_issues_tid_src_promo",
+			"fields": [
+				"source_order_id",
+				"promotion_id"
+			]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sls_vchr_issues_tid_voucher",
+			"fields": [
+				"voucher_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "source_order_id",
+			"label": "fields.source_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order whose confirmation issued the coupon. At most one issuance per promotion per order; a retried Confirm returns it (BR-V11)."
+			}
+		},
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The next_order_coupon promotion."
+			}
+		},
+		{
+			"name": "voucher_id",
+			"label": "fields.voucher_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The coupon issued. Its current state lives on the voucher."
+			}
+		},
+		{
+			"name": "issue_rule_snapshot",
+			"label": "fields.issue_rule_snapshot",
+			"data_type": "jsonmap",
+			"no_update": true,
+			"description": {
+				"en-US": "The issue-phase evaluation the coupon was granted on."
+			}
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When it was issued."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+	"edges_to": [
+		{
+			"edge": "source_order",
+			"label": {
+				"en-US": "Source order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"source_order_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "promotion",
+			"label": {
+				"en-US": "Promotion"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_promotion",
+			"key_map": {
+				"promotion_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "voucher",
+			"label": {
+				"en-US": "Voucher"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_voucher",
+			"key_map": {
+				"voucher_id": "id"
+			},
+			"on_delete": "RESTRICT"
+		}
+	]
+}

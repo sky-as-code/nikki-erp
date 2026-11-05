@@ -4,6 +4,7 @@ import (
 	"mime/multipart"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 // Multipart form parts of POST /{resource}/import.
@@ -14,7 +15,7 @@ const (
 
 // DefaultImportLanguage fills a mapping that names no language, so a multilingual cell still
 // lands under a real language key.
-const DefaultImportLanguage = "en-US"
+const DefaultImportLanguage = model.DefaultLanguageCode
 
 // ImportMapping is the JSON carried by the "mapping" form part: which file column feeds which
 // schema field, in which language a free-text cell is written, and whether a reference cell

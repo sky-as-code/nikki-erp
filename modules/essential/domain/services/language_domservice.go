@@ -130,7 +130,8 @@ func (this *LanguageDomainServiceImpl) assertCanLeaveActiveSet(
 }
 
 // defaultLocaleCode is the acting organization's effective system_language, or the application
-// default when none is set -- the same fallback the locale resolver walks. Without an acting user
+// default (model.DefaultLanguageCode, the initial application locale, Vietnamese) when none is set
+// -- the same fallback the locale resolver walks. Without an acting user
 // there is no organization to read, so the application default answers.
 func (this *LanguageDomainServiceImpl) defaultLocaleCode(ctx corectx.Context) (string, error) {
 	if this.effectiveSettings == nil || ctx.GetPermissions().UserId == "" {

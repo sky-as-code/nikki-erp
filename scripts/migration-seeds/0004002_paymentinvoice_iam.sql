@@ -41,12 +41,12 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0PAY1SMY4Q2E7VC4DDZAPWF', jsonb_build_object('en-US', 'Payment & Invoice - Payment Order', 'vi-VN', 'Thanh toán & Hóa đơn - Lệnh thanh toán'), 'paymentinvoice_order', 'A request to collect money through a payment gateway', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1V59JZP88YNHA9FEC4F', jsonb_build_object('en-US', 'Payment & Invoice - Payment Transaction', 'vi-VN', 'Thanh toán & Hóa đơn - Giao dịch thanh toán'), 'paymentinvoice_transaction', 'One payment or refund attempt recorded against an order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY16EZ1JQ1TS64Q21TPE7', jsonb_build_object('en-US', 'Payment & Invoice - Invoice', 'vi-VN', 'Thanh toán & Hóa đơn - Hóa đơn'), 'paymentinvoice_invoice', 'An accounting document issued for a sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY13K1F11EGR7EET7DHAM', jsonb_build_object('en-US', 'Payment & Invoice - Invoice Line', 'vi-VN', 'Thanh toán & Hóa đơn - Dòng hóa đơn'), 'paymentinvoice_invoice_line', 'One charged item of an invoice', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1PRF7Z8QK3M2N4T5V6W', jsonb_build_object('en-US', 'Payment & Invoice - Payment Profile', 'vi-VN', 'Thanh toán & Hóa đơn - Hồ sơ thanh toán'), 'paymentinvoice_payment_profile', 'One merchant account at a gateway: the credentials a payment settles into', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1GEVS6GFS22NP6V3ZRW', jsonb_build_object('en-US', 'Payment & Invoice - Payment Method', 'vi-VN', 'Thanh toán & Hóa đơn - Phương thức thanh toán'), 'paymentinvoice_payment_method', 'A configured way the business can be paid, naming the adapter that carries it out', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0PAY1SMY4Q2E7VC4DDZAPWF', jsonb_build_object('en-US', 'Payment & Invoice - Payment Order', 'vi-VN', 'Thanh toán & Hóa đơn - Lệnh thanh toán'), 'paymentinvoice_order', 'Yêu cầu thu tiền qua cổng thanh toán', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1V59JZP88YNHA9FEC4F', jsonb_build_object('en-US', 'Payment & Invoice - Payment Transaction', 'vi-VN', 'Thanh toán & Hóa đơn - Giao dịch thanh toán'), 'paymentinvoice_transaction', 'Một lần thanh toán hoặc hoàn tiền được ghi nhận cho đơn hàng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY16EZ1JQ1TS64Q21TPE7', jsonb_build_object('en-US', 'Payment & Invoice - Invoice', 'vi-VN', 'Thanh toán & Hóa đơn - Hóa đơn'), 'paymentinvoice_invoice', 'Chứng từ kế toán được phát hành cho một giao dịch bán', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY13K1F11EGR7EET7DHAM', jsonb_build_object('en-US', 'Payment & Invoice - Invoice Line', 'vi-VN', 'Thanh toán & Hóa đơn - Dòng hóa đơn'), 'paymentinvoice_invoice_line', 'Một khoản tính tiền trong hóa đơn', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V6W', jsonb_build_object('en-US', 'Payment & Invoice - Payment Profile', 'vi-VN', 'Thanh toán & Hóa đơn - Hồ sơ thanh toán'), 'paymentinvoice_payment_profile', 'Một tài khoản người bán tại cổng thanh toán: thông tin xác thực của tài khoản nhận tiền', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1GEVS6GFS22NP6V3ZRW', jsonb_build_object('en-US', 'Payment & Invoice - Payment Method', 'vi-VN', 'Thanh toán & Hóa đơn - Phương thức thanh toán'), 'paymentinvoice_payment_method', 'Một cách thanh toán đã được cấu hình cho doanh nghiệp, kèm bộ kết nối thực hiện thanh toán', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -61,24 +61,24 @@ BEGIN
 		('01M0PAY1PSDC0EYRH48TMMAA74', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1RSEQZJJHXZ2FMVG54N', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1QHHPQ1HBD5ABESXBKS', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY11YGG1SE82N91KSX4MX', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a payment method so it is out of the working set', '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY11YGG1SE82N91KSX4MX', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ phương thức thanh toán để loại khỏi danh sách đang sử dụng', '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Payment Profile. The credentials a payment settles into, so read is a materially larger
 		-- grant here than on a payment method: reading one profile hands back the merchant secrets in
 		-- the clear, and so does a search that names the config field.
 		('01M0PAY1PRF7Z8QK3M2N4T5V70', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1PRF7Z8QK3M2N4T5V71', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read a profile, including the gateway credentials it holds', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V71', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem hồ sơ, bao gồm thông tin xác thực cổng thanh toán', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1PRF7Z8QK3M2N4T5V72', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1PRF7Z8QK3M2N4T5V73', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1PRF7Z8QK3M2N4T5V74', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Withdraw a merchant account from use without losing the payments it collected', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V74', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Ngừng sử dụng tài khoản người bán mà không mất các khoản thanh toán đã thu', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Payment Order. No create: see the note at the top of this file.
 		('01M0PAY10AA5Y9QZ20ZKN9CQ89', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1ZFBX5PXV06Z0C12PQH', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', 'Correct the descriptive fields of an order; never its amount or status', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1ZFBX5PXV06Z0C12PQH', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', 'Sửa các trường mô tả của đơn hàng; không bao giờ sửa số tiền hay trạng thái', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1431QXXE8YQ1T0EMF6A', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1B6W0ZMV0FYA841TK27', jsonb_build_object('en-US', 'Take payment', 'vi-VN', 'Thu tiền'), 'create_payment', 'Open an order and ask the gateway for the payment instrument', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY15MWQ2C0ZT4Y516XR83', jsonb_build_object('en-US', 'Refund', 'vi-VN', 'Hoàn tiền'), 'refund', 'Return money for an order already paid', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1HAVGWD8TKTK7KBZASV', jsonb_build_object('en-US', 'Clear terminal orders', 'vi-VN', 'Dọn đơn hàng đã kết thúc'), 'remove_pos_orders', 'Clear the orders queued on one card terminal', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1B6W0ZMV0FYA841TK27', jsonb_build_object('en-US', 'Take payment', 'vi-VN', 'Thu tiền'), 'create_payment', 'Mở lệnh thanh toán và yêu cầu cổng thanh toán cung cấp phương tiện thanh toán', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY15MWQ2C0ZT4Y516XR83', jsonb_build_object('en-US', 'Refund', 'vi-VN', 'Hoàn tiền'), 'refund', 'Hoàn tiền cho đơn hàng đã thanh toán', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1HAVGWD8TKTK7KBZASV', jsonb_build_object('en-US', 'Clear terminal orders', 'vi-VN', 'Dọn đơn hàng trên máy POS'), 'remove_pos_orders', 'Xóa các đơn hàng đang chờ trên một máy POS thanh toán thẻ', '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Payment Transaction. Read only: see the note at the top of this file.
 		('01M0PAY1SK0G6D93AX36PAN8G6', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0PAY1V59JZP88YNHA9FEC4F', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
@@ -88,8 +88,8 @@ BEGIN
 		('01M0PAY1FGC5MGT15EF15VYP82', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1QC6AXW0XZ3YVDASK7G', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1938DEYJVVE8T3MZG6C', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1AVSMSG28BHSAVAJG2R', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive an invoice so it is out of the working set', '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1DS35GY6SWYQ8YEEZV2', jsonb_build_object('en-US', 'Issue', 'vi-VN', 'Phát hành'), 'issue', 'Close a draft: assign its number, freeze its totals and stamp the issue date', '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1AVSMSG28BHSAVAJG2R', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ hóa đơn để loại khỏi danh sách đang sử dụng', '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1DS35GY6SWYQ8YEEZV2', jsonb_build_object('en-US', 'Issue', 'vi-VN', 'Phát hành'), 'issue', 'Chốt bản nháp: cấp số, cố định tổng tiền và ghi ngày phát hành', '01M0PAY16EZ1JQ1TS64Q21TPE7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Invoice Line
 		('01M0PAY11935H0BKW0TFNJNNHW', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0PAY13K1F11EGR7EET7DHAM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

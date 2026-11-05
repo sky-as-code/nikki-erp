@@ -38,7 +38,11 @@ func (this *fakeSettingsDomain) GetSettings(
 	ctx corectx.Context, _ string, _ string, _ it.GetSettingsQuery,
 ) (*it.GetSettingsResult, error) {
 	this.record(ctx)
-	return &it.GetSettingsResult{HasData: true}, nil
+	items := []it.SettingItem{
+		{Name: "locked", AllowOverride: false, Editable: true},
+		{Name: "open", AllowOverride: true, Editable: true},
+	}
+	return &it.GetSettingsResult{Data: it.GetSettingsResultData{Items: items}, HasData: true}, nil
 }
 
 func (this *fakeSettingsDomain) SetSettings(
@@ -146,4 +150,44 @@ func TestSetOrgSettings_WithoutOrgIdKeepsTheTenantScopeCheck(t *testing.T) {
 	require.NoError(t, err)
 	assert.Positive(t, result.ClientErrors.Count())
 	assert.Zero(t, domain.calls)
+}
+
+func editableOf(items []it.SettingItem) []bool {
+	editable := make([]bool, 0, len(items))
+	for _, item := range items {
+		editable = append(editable, item.Editable)
+	}
+	return editable
+}
+
+func TestGetTenantSettings_ReaderWithoutUpdateSeesNothingEditable(t *testing.T) {
+	svc := NewTenantSettingsAppServiceImpl(&fakeSettingsDomain{})
+
+	result, err := svc.GetTenantSettings(orgMemberCaller(tenantGrant(actionRead)),
+		it.GetSettingsQuery{ModuleKey: "vendingmachine"})
+
+	require.NoError(t, err)
+	assert.Zero(t, result.ClientErrors.Count())
+	assert.Equal(t, []bool{false, false}, editableOf(result.Data.Items),
+		"a caller who cannot write tenant settings must not be offered to edit them")
+}
+
+func TestGetTenantSettings_TenantAdminKeepsTheDomainAnswer(t *testing.T) {
+	svc := NewTenantSettingsAppServiceImpl(&fakeSettingsDomain{})
+
+	result, err := svc.GetTenantSettings(orgMemberCaller(tenantGrant(actionRead), tenantGrant(actionUpdate)),
+		it.GetSettingsQuery{ModuleKey: "vendingmachine"})
+
+	require.NoError(t, err)
+	assert.Equal(t, []bool{true, true}, editableOf(result.Data.Items))
+}
+
+func TestGetTenantSettings_OrgUpdateGrantDoesNotMakeTenantItemsEditable(t *testing.T) {
+	svc := NewTenantSettingsAppServiceImpl(&fakeSettingsDomain{})
+
+	result, err := svc.GetTenantSettings(orgMemberCaller(tenantGrant(actionRead), bareOrgGrant(actionUpdate)),
+		it.GetSettingsQuery{ModuleKey: "vendingmachine"})
+
+	require.NoError(t, err)
+	assert.Equal(t, []bool{false, false}, editableOf(result.Data.Items))
 }

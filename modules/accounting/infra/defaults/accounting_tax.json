@@ -11,7 +11,10 @@
 			"en-US": "VAT 10%",
 			"vi-VN": "GTGT 10%"
 		},
-		"description": "Standard Vietnamese VAT rate"
+		"description": {
+			"en-US": "Standard Vietnamese VAT rate",
+			"vi-VN": "Thuế suất GTGT tiêu chuẩn của Việt Nam"
+		}
 	},
 	{
 		"$alias": "tax_vn_vat_8",
@@ -25,7 +28,10 @@
 			"en-US": "VAT 8%",
 			"vi-VN": "GTGT 8%"
 		},
-		"description": "Temporarily reduced VAT rate under Resolution 204/2025/QH15"
+		"description": {
+			"en-US": "Temporarily reduced VAT rate under Resolution 204/2025/QH15",
+			"vi-VN": "Thuế suất GTGT giảm tạm thời theo Nghị quyết 204/2025/QH15"
+		}
 	},
 	{
 		"$alias": "tax_vn_vat_5",
@@ -39,7 +45,10 @@
 			"en-US": "VAT 5%",
 			"vi-VN": "GTGT 5%"
 		},
-		"description": "Reduced statutory VAT rate"
+		"description": {
+			"en-US": "Reduced statutory VAT rate",
+			"vi-VN": "Thuế suất GTGT ưu đãi theo luật định"
+		}
 	},
 	{
 		"$alias": "tax_vn_vat_0",
@@ -53,20 +62,26 @@
 			"en-US": "VAT 0%",
 			"vi-VN": "GTGT 0%"
 		},
-		"description": "Zero rated: taxed at 0%, which is not the same as exempt"
+		"description": {
+			"en-US": "Zero rated: taxed at 0%, which is not the same as exempt",
+			"vi-VN": "Thuế suất 0%: chịu thuế ở mức 0%, khác với không chịu thuế"
+		}
 	},
 	{
 		"$alias": "tax_vn_vat_exempt",
 		"code": "VN-VAT-EXEMPT",
 		"name": {
 			"en-US": "VAT exempt",
-			"vi-VN": "Khong chiu thue GTGT"
+			"vi-VN": "Không chịu thuế GTGT"
 		},
 		"tax_kind": "vat",
 		"invoice_label": {
 			"en-US": "VAT exempt",
-			"vi-VN": "Khong chiu thue GTGT"
+			"vi-VN": "Không chịu thuế GTGT"
 		},
-		"description": "Exempt supplies: no VAT and no input tax recovery"
+		"description": {
+			"en-US": "Exempt supplies: no VAT and no input tax recovery",
+			"vi-VN": "Không chịu thuế: không tính thuế GTGT và không được khấu trừ thuế đầu vào"
+		}
 	}
 ]

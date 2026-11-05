@@ -1,0 +1,66 @@
+{
+	"name": "sales_promotion_rule_product",
+	"label": "sales_promotion_rule_product.label",
+	"table_name": "sales_promotion_rule_products",
+	"should_build_db": true,
+	"exclusive_required_fields": [["product_template_id", "product_variant_id"]],
+	"partial_uniques_strict": [
+		{ "index_name": "sls_promo_rule_prods_tid_rule_tpl", "not_null_fields": ["rule_id"], "nullable_field": "product_template_id" },
+		{ "index_name": "sls_promo_rule_prods_tid_rule_var", "not_null_fields": ["rule_id"], "nullable_field": "product_variant_id" }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "rule_id",
+			"label": "fields.rule_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": { "en-US": "The rule this product selector narrows. Written only through the rule's manage_products action." }
+		},
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": { "en-US": "Matches every variant of this template (BR-C03). Exactly one of product_template_id and product_variant_id is set." }
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": { "en-US": "Matches this variant only (BR-C03)." }
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.traceable_model"],
+
+	"edges_to": [
+		{
+			"edge": "rule",
+			"label": { "en-US": "Rule" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_rule",
+			"key_map": { "rule_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "product_template",
+			"label": { "en-US": "Product template" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template",
+			"key_map": { "product_template_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}

@@ -2,8 +2,8 @@
 	{
 		"$alias": "pricelist_retail_vnd",
 		"code": "RETAIL-VND",
-		"name": "Retail price list",
-		"description": "The organization default: what an order falls back to when it names no list",
+		"name": {"en-US": "Retail price list", "vi-VN": "Bảng giá bán lẻ"},
+		"description": {"en-US": "The organization default: what an order falls back to when it names no list", "vi-VN": "Mặc định của tổ chức: đơn hàng dùng bảng giá này khi không chỉ định bảng giá nào"},
 		"currency_id": "@currency_vnd",
 		"is_default": true,
 		"priority": 0

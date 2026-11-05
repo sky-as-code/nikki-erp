@@ -54,6 +54,7 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 		constants.ActionLock:             true,
 		constants.ActionUnlock:           true,
 		constants.ActionAcknowledge:      true,
+		constants.ActionReprice:          true,
 		// Merge is seeded but not yet reached; the constant exists so the two cannot drift apart.
 		constants.ActionMerge: true,
 	}

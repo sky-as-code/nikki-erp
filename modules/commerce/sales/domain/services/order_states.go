@@ -254,33 +254,6 @@ func DeriveOrderStatus(current, paymentStatus, fulfillmentStatus string) string 
 	return current
 }
 
-// voucherRedemptionTransitions maps each redemption status to what it may become.
-//
-// A reservation settles as redeemed when the order confirms or released when the draft is cancelled
-// or expires; a redemption is undone by a return as reversed. Released and reversed both give the
-// code its use back but are not interchangeable — a release says no sale happened, a reversal says
-// one happened and was returned, and campaign reports count them differently. Nothing returns to
-// reserved: the composite unique on (voucher_code_id, sales_order_id) allows one use per order.
-var voucherRedemptionTransitions = map[string][]string{
-	string(models.VoucherRedemptionStatusReserved): {
-		string(models.VoucherRedemptionStatusRedeemed),
-		string(models.VoucherRedemptionStatusReleased),
-	},
-	string(models.VoucherRedemptionStatusRedeemed): {
-		string(models.VoucherRedemptionStatusReversed),
-	},
-	string(models.VoucherRedemptionStatusReleased): {},
-	string(models.VoucherRedemptionStatusReversed): {},
-}
-
-func CanTransitionVoucherRedemption(from, to string) bool {
-	return canTransition(voucherRedemptionTransitions, from, to)
-}
-
-func NextVoucherRedemptionStatuses(from string) []string {
-	return slices.Clone(voucherRedemptionTransitions[from])
-}
-
 // quotationTransitions maps each quotation status to what it may become.
 //
 // accepted, expired and cancelled are all terminal: an accepted quotation is spent, and re-accepting

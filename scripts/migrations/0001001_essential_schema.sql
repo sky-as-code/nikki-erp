@@ -151,7 +151,7 @@ CREATE TABLE "essential_sequence_definitions" (
   "org_id" character varying NULL,
   "owner_module" character varying NULL,
   "code" character varying NULL,
-  "name" jsonb NULL,
+  "name" character varying NULL,
   "description" character varying NULL,
   "sub_scope" character varying NULL,
   "scope_type" character varying NULL,

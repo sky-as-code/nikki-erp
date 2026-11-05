@@ -21,7 +21,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0CUR1QK4N7VZBX2M9TPE5RD', jsonb_build_object('en-US', 'Essential - Currency', 'vi-VN', 'Thiết yếu - Tiền tệ'), 'essential_currency', 'Currencies an amount may be denominated in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0CUR1QK4N7VZBX2M9TPE5RD', jsonb_build_object('en-US', 'Essential - Currency', 'vi-VN', 'Thiết yếu - Tiền tệ'), 'essential_currency', 'Các loại tiền tệ có thể dùng để biểu thị số tiền', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -34,7 +34,7 @@ BEGIN
 		('01M0CUR1QN8R1ZD2B6S3XTJ9VG', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0CUR1QP0T3BF4D8V5ZWK1XH', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0CUR1QQ2V5DH6F0X7BYM3ZJ', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0CUR1QR4X7FK8H2Z9DAP5BK', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a currency so it is out of the working set', '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0CUR1QR4X7FK8H2Z9DAP5BK', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ tiền tệ để loại khỏi danh sách đang sử dụng', '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -51,7 +51,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Essential - Language', 'vi-VN', 'Thiết yếu - Ngôn ngữ'), 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Essential - Language', 'vi-VN', 'Thiết yếu - Ngôn ngữ'), 'essential_language', 'Các ngôn ngữ ứng dụng có thể hiển thị', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -64,7 +64,7 @@ BEGIN
 		('01M51EPZ8K971CG6CDVQR2HM4C', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M51EPZ8KAM7Q05W89H7KMFN4', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M51EPZ8KR000000000000RD1', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M51EPZ8KR000000000000AR1', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a language so it is out of the working set', '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M51EPZ8KR000000000000AR1', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ ngôn ngữ để loại khỏi danh sách đang sử dụng', '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -82,9 +82,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M6HAZYBPSGCZC00GRDHH2R3V', jsonb_build_object('en-US', 'Essential - Sequence', 'vi-VN', 'Thiết yếu - Mã tuần tự'), 'essential_sequence_definition', 'Rules that number documents', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M6HAZYBTDM3V2N1MJPS393CM', jsonb_build_object('en-US', 'Essential - Sequence Counter', 'vi-VN', 'Thiết yếu - Bộ đếm mã tuần tự'), 'essential_sequence_counter', 'Read-only progress of a sequence per scope and period', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M6HAZYBW39HG92Q86P5R93BA', jsonb_build_object('en-US', 'Essential - Sequence Issuance', 'vi-VN', 'Thiết yếu - Lần cấp mã'), 'essential_sequence_issuance', 'Read-only receipts of issued numbers, kept for the retention period', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M6HAZYBPSGCZC00GRDHH2R3V', jsonb_build_object('en-US', 'Essential - Sequence', 'vi-VN', 'Thiết yếu - Mã tuần tự'), 'essential_sequence_definition', 'Quy tắc đánh số chứng từ', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M6HAZYBTDM3V2N1MJPS393CM', jsonb_build_object('en-US', 'Essential - Sequence Counter', 'vi-VN', 'Thiết yếu - Bộ đếm mã tuần tự'), 'essential_sequence_counter', 'Tiến độ chỉ đọc của mã tuần tự theo phạm vi và kỳ', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M6HAZYBW39HG92Q86P5R93BA', jsonb_build_object('en-US', 'Essential - Sequence Issuance', 'vi-VN', 'Thiết yếu - Lần cấp mã'), 'essential_sequence_issuance', 'Biên nhận chỉ đọc của các số đã cấp, lưu trong thời hạn lưu giữ', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -96,8 +96,8 @@ BEGIN
 		-- Sequence definition
 		('01M6HAZYBZQFRV4VP4A0HHR451', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M6HAZYC11PN8FZB9TMR7VKCB', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M6HAZYC4CNACJGJKHAA659XH', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read definitions and preview their codes', '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M6HAZYC7J4QC1AZ4ZZXSPJS4', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a sequence so it issues no new numbers', '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M6HAZYC4CNACJGJKHAA659XH', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem định nghĩa và xem trước mã', '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M6HAZYC7J4QC1AZ4ZZXSPJS4', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Lưu trữ mã tuần tự để không cấp thêm số mới', '01M6HAZYBPSGCZC00GRDHH2R3V', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sequence counter
 		('01M6HAZYCA9PSCBN5SC0VSEPRJ', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M6HAZYBTDM3V2N1MJPS393CM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sequence issuance

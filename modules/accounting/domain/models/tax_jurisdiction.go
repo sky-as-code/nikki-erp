@@ -53,12 +53,12 @@ func (this *TaxJurisdiction) SetCode(v *string) {
 	this.GetFieldData().SetString(TaxJurisdictionFieldCode, v)
 }
 
-func (this TaxJurisdiction) GetName() *model.LangJson {
-	return this.GetFieldData().GetLangJson(TaxJurisdictionFieldName)
+func (this TaxJurisdiction) GetName() *string {
+	return this.GetFieldData().GetString(TaxJurisdictionFieldName)
 }
 
-func (this *TaxJurisdiction) SetName(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(TaxJurisdictionFieldName, v)
+func (this *TaxJurisdiction) SetName(v *string) {
+	this.GetFieldData().SetString(TaxJurisdictionFieldName, v)
 }
 
 func (this TaxJurisdiction) GetCountryCode() *string {

@@ -30,12 +30,14 @@ type SequenceDomainService interface {
 
 // UpsertDefinitionCommand registers a definition, or returns the existing one with the same
 // (configuration_scope, org, code) unchanged. OrgId is nil for configuration_scope "tenant".
+// Names are candidate translations; the definition stores the one in the org's system_language
+// (DefaultLanguageCode for a tenant definition).
 type UpsertDefinitionCommand struct {
 	ConfigurationScope    string         `json:"configuration_scope"`
 	OrgId                 *model.Id      `json:"org_id"`
 	OwnerModule           string         `json:"owner_module"`
 	Code                  string         `json:"code"`
-	Name                  model.LangJson `json:"name"`
+	Names                 model.LangJson `json:"names"`
 	Description           *string        `json:"description"`
 	SubScope              *string        `json:"sub_scope"`
 	FormatOwner           *string        `json:"format_owner"`

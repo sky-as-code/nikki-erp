@@ -1,8 +1,6 @@
 package pricing
 
 import (
-	"sort"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -11,17 +9,15 @@ import (
 //  1. resolve product, quantity and unit
 //  2. resolve the base price, from a pricelist item or the catalogue
 //  3. resolve the combo price
-//  4. apply automatic conditional pricing
-//  5. apply voucher programs
+//  4. (promotions: applied afterwards by ApplyPromotionEffects, see below)
+//  5. apply the manual overrides
 //  6. allocate order-level adjustments down to the lines
 //  7. calculate tax
 //  8. apply monetary rounding
 //  9. freeze the snapshot
 //
-// Steps 4 and 5 are one loop, not two passes: the programs already arrive in the caller's resolved
-// order, and a second pass would silently take precedence whatever the priorities said. Every
-// program is evaluated against the state BEFORE any program applied, so eligibility does not depend
-// on which other program happened to run first.
+// Promotions are not a step inside Calculate: the BR engine qualifies them on the untaxed value
+// after manual discounts (BR-C05, BR-C06), which needs Accounting's tax on this result first.
 func Calculate(input Input) Result {
 	scale := InternalScale
 
@@ -54,11 +50,9 @@ func Calculate(input Input) Result {
 		})
 	}
 
-	// Steps 4–5: apply the programs the caller resolved, in the order given.
-	lines, adjustments, sequence = applyPrograms(input, lines, adjustments, sequence, scale)
-
-	// Step 5b: manual overrides. After the programs, because the operator decided in light of the
-	// automatic pricing; before tax, because an override changes what is taxed.
+	// Step 5b: manual overrides, before tax because an override changes what is taxed. Promotions
+	// follow in ApplyPromotionEffects: the BR engine (pricing/promotion) needs Accounting's tax on
+	// this pre-promotion base, which only the caller can fetch.
 	lines, adjustments, sequence = applyManualDiscounts(input, lines, adjustments, sequence, scale)
 
 	// Step 6: allocate order-level adjustments down to the lines.
@@ -66,10 +60,14 @@ func Calculate(input Input) Result {
 
 	// Step 7: tax.
 	lines = applyTax(lines, input.Context.TaxByLineKey, scale)
+	return finish(lines, adjustments, sequence, input.Context.CurrencyScale)
+}
 
-	// Step 8: rounding, the last money step before the freeze. Applied once, to the grand total.
+// finish is steps 8 and 9: rounding once on the grand total, then the freeze. The caller writes the
+// lines and adjustments as they stand; after confirmation they are immutable.
+func finish(lines []LineResult, adjustments []Adjustment, sequence int32, currencyScale int32) Result {
 	result := totalise(lines)
-	rounded := result.GrandTotal.Round(input.Context.CurrencyScale)
+	rounded := result.GrandTotal.Round(currencyScale)
 	if !rounded.Equal(result.GrandTotal) {
 		sequence++
 		adjustments = append(adjustments, Adjustment{
@@ -81,9 +79,6 @@ func Calculate(input Input) Result {
 		})
 		result.GrandTotal = rounded
 	}
-
-	// Step 9: freeze. The caller writes the lines and adjustments as they stand; after confirmation
-	// they are immutable.
 	result.Lines = lines
 	result.Adjustments = adjustments
 	return result
@@ -212,6 +207,7 @@ func resolveLines(input Input, scale int32) []LineResult {
 				result.EffectiveUnitPrice = price
 				result.PricingSource = "pricelist"
 				result.PricelistItemId = item.Id
+				result.PricelistId = item.PricelistId
 			}
 		}
 
@@ -282,143 +278,6 @@ func referenceTotalOf(line LineResult) decimal.Decimal {
 	// The allocated amounts already sum to the combo price, so they cannot serve as the reference; the
 	// gross amount does, making the combo adjustment zero unless standalone prices were supplied.
 	return line.GrossAmount
-}
-
-// applyPrograms runs steps 4–5.
-func applyPrograms(
-	input Input, lines []LineResult, adjustments []Adjustment, sequence int32, scale int32,
-) ([]LineResult, []Adjustment, int32) {
-	// The pre-application state every program is evaluated against, captured once — see Calculate.
-	baseNet := netTotalOf(lines)
-
-	for _, program := range input.Programs {
-		rewards := make([]RewardInput, len(program.Rewards))
-		copy(rewards, program.Rewards)
-		sort.SliceStable(rewards, func(i, j int) bool {
-			return rewards[i].Sequence < rewards[j].Sequence
-		})
-
-		for _, reward := range rewards {
-			sequence++
-			lines, adjustments = applyReward(
-				lines, adjustments, program, reward, baseNet, sequence, scale)
-		}
-	}
-	return lines, adjustments, sequence
-}
-
-// applyReward applies one reward and records what it did.
-func applyReward(
-	lines []LineResult, adjustments []Adjustment,
-	program AppliedProgram, reward RewardInput,
-	baseNet decimal.Decimal, sequence int32, scale int32,
-) ([]LineResult, []Adjustment) {
-	description := program.ProgramName
-	if program.VoucherCode != "" {
-		description = program.ProgramName + " (" + program.VoucherCode + ")"
-	}
-	adjustmentType := AdjustmentPercentageDiscount
-	if program.VoucherCode != "" {
-		adjustmentType = AdjustmentVoucher
-	}
-
-	switch reward.Type {
-	case "percentage_discount":
-		targets := targetIndices(lines, reward)
-		base := netOfIndices(lines, targets)
-		amount := base.Mul(reward.Value).Div(decimal.NewFromInt(100)).Round(scale).Neg()
-		lines = applyDiscountToLines(lines, targets, amount, scale)
-		adjustments = append(adjustments, Adjustment{
-			Sequence: sequence, Type: adjustmentType,
-			SourceType: "sales_promotion_program", SourceId: program.ProgramId,
-			Description: description, BaseAmount: base, Amount: amount,
-		})
-
-	case "fixed_amount_discount":
-		targets := targetIndices(lines, reward)
-		base := netOfIndices(lines, targets)
-		// Never discount more than the target lines are worth, or the total goes negative.
-		amount := reward.Value.Round(scale)
-		if amount.GreaterThan(base) {
-			amount = base
-		}
-		amount = amount.Neg()
-		lines = applyDiscountToLines(lines, targets, amount, scale)
-		adjustments = append(adjustments, Adjustment{
-			Sequence: sequence, Type: chooseFixedType(adjustmentType),
-			SourceType: "sales_promotion_program", SourceId: program.ProgramId,
-			Description: description, BaseAmount: base, Amount: amount,
-		})
-
-	case "fixed_product_price":
-		// Conditional bundle pricing: not a combo, but a reward setting a per-unit price on lines.
-		targets := targetIndices(lines, reward)
-		base := netOfIndices(lines, targets)
-		for _, index := range targets {
-			newGross := reward.Value.Mul(lines[index].Quantity).Round(scale)
-			lines[index].EffectiveUnitPrice = reward.Value
-			lines[index].DiscountAmount = lines[index].DiscountAmount.Add(
-				lines[index].NetAmount.Sub(newGross))
-			lines[index].NetAmount = newGross
-			lines[index].PricingSource = "pricelist"
-		}
-		after := netOfIndices(lines, targets)
-		adjustments = append(adjustments, Adjustment{
-			Sequence: sequence, Type: AdjustmentConditionalPrice,
-			SourceType: "sales_promotion_program", SourceId: program.ProgramId,
-			Description: description, BaseAmount: base, Amount: after.Sub(base),
-		})
-
-	case "free_quantity":
-		// A free item is a REAL line at zero price, not an adjustment: Inventory must fulfil it and its
-		// VAT treatment is a line-level question.
-		lines = append(lines, LineResult{
-			Key:                      reward.RewardId,
-			LineNumber:               nextLineNumber(lines),
-			ProductVariantId:         reward.FreeProductVariantId,
-			UomId:                    reward.FreeUomId,
-			Quantity:                 reward.Value,
-			ProductCode:              reward.FreeProductCode,
-			ProductName:              reward.FreeProductName,
-			LineType:                 "promotion_reward",
-			PricingSource:            "promotion_reward",
-			SourcePromotionProgramId: program.ProgramId,
-			RequiresFulfillment:      true,
-			BaseUnitPrice:            decimal.Zero,
-			EffectiveUnitPrice:       decimal.Zero,
-		})
-	}
-	return lines, adjustments
-}
-
-func chooseFixedType(adjustmentType string) string {
-	if adjustmentType == AdjustmentVoucher {
-		return AdjustmentVoucher
-	}
-	return AdjustmentFixedDiscount
-}
-
-// targetIndices resolves which lines a reward applies to. An order-scoped reward, or one naming no
-// lines, applies to every line that carries a price.
-func targetIndices(lines []LineResult, reward RewardInput) []int {
-	wanted := make(map[string]bool, len(reward.TargetLineKeys))
-	for _, key := range reward.TargetLineKeys {
-		wanted[key] = true
-	}
-
-	indices := make([]int, 0, len(lines))
-	for index, line := range lines {
-		if len(wanted) > 0 && !wanted[line.Key] {
-			continue
-		}
-		// A giveaway line is never discounted: its share would come off a line the customer is paying
-		// for.
-		if line.LineType == "promotion_reward" {
-			continue
-		}
-		indices = append(indices, index)
-	}
-	return indices
 }
 
 // applyDiscountToLines spreads a discount across the target lines proportionally to their CURRENT
@@ -560,22 +419,4 @@ func netTotalOf(lines []LineResult) decimal.Decimal {
 		total = total.Add(line.NetAmount)
 	}
 	return total
-}
-
-func netOfIndices(lines []LineResult, indices []int) decimal.Decimal {
-	total := decimal.Zero
-	for _, index := range indices {
-		total = total.Add(lines[index].NetAmount)
-	}
-	return total
-}
-
-func nextLineNumber(lines []LineResult) int32 {
-	highest := int32(0)
-	for _, line := range lines {
-		if line.LineNumber > highest {
-			highest = line.LineNumber
-		}
-	}
-	return highest + 1
 }

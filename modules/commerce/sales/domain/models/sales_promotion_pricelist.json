@@ -1,0 +1,32 @@
+{
+	"name": "sales_promotion_pricelist",
+	"label": "sales_promotion_pricelist.label",
+	"table_name": "sales_promotion_pricelists",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "sls_promo_pl_tid_promo_pl", "fields": ["promotion_id", "sales_pricelist_id"] }
+	],
+	"search_indexes": [{ "index_name": "sls_promo_pl_tid_pl", "fields": ["sales_pricelist_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "promotion_id",
+			"label": "fields.promotion_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The promotion this scope row belongs to. Written only through the promotion's manage_pricelists action, which checks the target is in the promotion's org; there is no CRUD on this junction."
+			}
+		},
+		{
+			"name": "sales_pricelist_id",
+			"label": "fields.sales_pricelist_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A pricelist whose lines may count. No row at all means every pricelist in the promotion's currency qualifies (BR §8.3, D2)."
+			}
+		}
+	]
+}

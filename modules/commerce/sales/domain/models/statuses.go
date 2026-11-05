@@ -113,9 +113,9 @@ const (
 	// sales_order_line_components, because Inventory fulfils real variants and never a virtual combo.
 	SalesOrderLineTypeCombo = SalesOrderLineType("combo")
 
-	// SalesOrderLineTypePromotionReward is a free item given by a promotion. A real line rather than
+	// SalesOrderLineTypePromotionGift is a free item given by a promotion. A real line rather than
 	// an adjustment, because Inventory must physically fulfil it and its VAT treatment is line-level.
-	SalesOrderLineTypePromotionReward = SalesOrderLineType("promotion_reward")
+	SalesOrderLineTypePromotionGift = SalesOrderLineType("promotion_gift")
 )
 
 // SalesOrderPricingSource is where a line's price came from. It lets the price-explanation API
@@ -128,45 +128,6 @@ const (
 	SalesOrderPricingSourceCombo           = SalesOrderPricingSource("combo")
 	SalesOrderPricingSourcePromotionReward = SalesOrderPricingSource("promotion_reward")
 	SalesOrderPricingSourceManualOverride  = SalesOrderPricingSource("manual_override")
-)
-
-// VoucherCodeStatus is whether a code may currently be applied. Expiry is deliberately absent: it
-// is a function of valid_until and the current time, so making it a status would leave a code
-// wrongly usable until some job ran.
-type VoucherCodeStatus string
-
-const (
-	VoucherCodeStatusActive = VoucherCodeStatus("active")
-
-	// VoucherCodeStatusDisabled is an operator's decision, and reversible; archiving is not.
-	VoucherCodeStatusDisabled = VoucherCodeStatus("disabled")
-
-	// VoucherCodeStatusExhausted is derived, not chosen: usage_count reached usage_limit. Set by the
-	// redemption path, and a return that restores a use moves it back.
-	VoucherCodeStatusExhausted = VoucherCodeStatus("exhausted")
-)
-
-// VoucherRedemptionStatus tracks one code's use on one order. A reservation taken on a draft is
-// settled as 'redeemed' if the order confirms or 'released' if it never does; a return then undoes a
-// redemption as 'reversed'. Released and reversed stay apart because a campaign report counts them
-// differently - never really used versus used and given back.
-type VoucherRedemptionStatus string
-
-const (
-	// VoucherRedemptionStatusReserved holds a use while an order is still a draft, stopping a second
-	// customer taking the last use of a voucher already in someone's basket. A usage counter alone
-	// could not, since a draft has not incremented it yet.
-	VoucherRedemptionStatusReserved = VoucherRedemptionStatus("reserved")
-
-	VoucherRedemptionStatusRedeemed = VoucherRedemptionStatus("redeemed")
-
-	// VoucherRedemptionStatusReleased gives the hold back without a sale: the draft was cancelled
-	// or expired.
-	VoucherRedemptionStatusReleased = VoucherRedemptionStatus("released")
-
-	// VoucherRedemptionStatusReversed gives a completed use back after a return. Whether a return
-	// restores at all is the program's decision, not the redemption's.
-	VoucherRedemptionStatusReversed = VoucherRedemptionStatus("reversed")
 )
 
 // SalesBillStatus is where a settlement unit stands. A bill is never a VAT invoice: a bill is how

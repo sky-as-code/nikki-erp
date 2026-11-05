@@ -47,6 +47,9 @@ var (
 	SeqReturnNumber = DocumentSequence{
 		Setting: salessettings.OrgSettingReturnNumberSequenceId, Field: models.SalesReturnFieldReturnNumber,
 	}
+	SeqPromotionReference = DocumentSequence{
+		Setting: salessettings.OrgSettingPromotionReferenceSequenceId, Field: models.SalesPromotionFieldReference,
+	}
 )
 
 // numberingRefusal carries a client refusal (the org's numbering not set up, or Essential refusing
